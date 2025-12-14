@@ -155,14 +155,14 @@ npm run build
 
 - Obsidian v0.15.0 以上
 - Google AI API キー
-- デスクトップ版のみ（モバイル非対応）
+- デスクトップ版・モバイル版両対応
 
 ## プライバシー
 
 - API キーは Vault の設定ファイルにローカル保存されます
 - RAG 有効時、ファイルは Google の File Search API にアップロードされます
 - チャット履歴は Vault 内に Markdown ファイルとしてローカル保存されます
-- RAG 設定はワークスペースフォルダ内の `.gemini-workspace.json` に保存されます
+- RAG 設定はワークスペースフォルダ内の `gemini-workspace.json` に保存されます
 
 ## 開発
 

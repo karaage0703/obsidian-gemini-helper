@@ -198,14 +198,14 @@ npm run build
 
 - Obsidian v0.15.0 or higher
 - Google AI API key
-- Desktop only (not available on mobile)
+- Works on both desktop and mobile
 
 ## Privacy
 
 - Your API key is stored locally in your vault's settings
 - Files are uploaded to Google's File Search API when RAG is enabled
 - Chat history is stored locally in your vault as Markdown files
-- RAG settings are stored in `.gemini-workspace.json` in your workspace folder
+- RAG settings are stored in `gemini-workspace.json` in your workspace folder
 
 ## License
 
