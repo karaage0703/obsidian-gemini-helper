@@ -140,12 +140,20 @@ export class SettingsTab extends PluginSettingTab {
           .getAllLoadedFiles()
           .filter((file) => file instanceof TFolder && !file.isRoot());
 
+        const currentFolder = this.plugin.settings.workspaceFolder;
+        const folderPaths = new Set(folders.map((f) => f.path));
+
+        // Add current setting if folder doesn't exist yet
+        if (currentFolder && !folderPaths.has(currentFolder)) {
+          dropdown.addOption(currentFolder, `${currentFolder} (will be created)`);
+        }
+
         folders.forEach((folder) => {
           dropdown.addOption(folder.path, folder.name);
         });
 
         dropdown
-          .setValue(this.plugin.settings.workspaceFolder)
+          .setValue(currentFolder)
           .onChange(async (value) => {
             await this.plugin.changeWorkspaceFolder(value);
             this.display();
