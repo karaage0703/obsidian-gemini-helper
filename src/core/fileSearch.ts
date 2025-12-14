@@ -6,6 +6,7 @@ import type {
   RagSyncState,
   RagFileInfo,
 } from "src/types";
+import { formatError } from "src/utils/error";
 
 export interface SyncResult {
   uploaded: string[];
@@ -110,20 +111,16 @@ export class FileSearchManager {
 
   // Create a new File Search Store
   async createStore(displayName: string): Promise<string> {
-    try {
-      const store = await this.ai.fileSearchStores.create({
-        config: { displayName },
-      });
+    const store = await this.ai.fileSearchStores.create({
+      config: { displayName },
+    });
 
-      if (!store.name) {
-        throw new Error("Failed to create store: no name returned");
-      }
-
-      this.storeName = store.name;
-      return store.name;
-    } catch (error) {
-      throw error;
+    if (!store.name) {
+      throw new Error("Failed to create store: no name returned");
     }
+
+    this.storeName = store.name;
+    return store.name;
   }
 
   // Get existing store or create new one
@@ -167,23 +164,17 @@ export class FileSearchManager {
 
     const content = await this.app.vault.read(file);
 
-    try {
-      // Create a Blob from the content
-      const blob = new Blob([content], { type: "text/markdown" });
+    const blob = new Blob([content], { type: "text/markdown" });
 
-      const startTime = Date.now();
-      const operation = await this.ai.fileSearchStores.uploadToFileSearchStore({
-        file: blob,
-        fileSearchStoreName: this.storeName,
-        config: {
-          displayName: file.path,
-        },
-      });
+    const operation = await this.ai.fileSearchStores.uploadToFileSearchStore({
+      file: blob,
+      fileSearchStoreName: this.storeName,
+      config: {
+        displayName: file.path,
+      },
+    });
 
-      return operation?.name ?? null;
-    } catch (error) {
-      throw error;
-    }
+    return operation?.name ?? null;
   }
 
   // Delete a file from the store
@@ -271,7 +262,7 @@ export class FileSearchManager {
           } catch (error) {
             result.errors.push({
               path: deletedPath,
-              error: `Delete failed: ${error}`,
+              error: `Delete failed: ${formatError(error)}`,
             });
           }
         }
@@ -332,7 +323,7 @@ export class FileSearchManager {
         } catch (error) {
           result.errors.push({
             path: item.file.path,
-            error: `Upload failed: ${error}`,
+            error: `Upload failed: ${formatError(error)}`,
           });
         }
       };
@@ -374,18 +365,14 @@ export class FileSearchManager {
       return;
     }
 
-    try {
-      await this.ai.fileSearchStores.delete({ name: targetStore, config: { force: true } });
-      this.storeName = null;
-      this.syncStatus = {
-        lastSync: null,
-        syncedFiles: [],
-        pendingFiles: [],
-        isRunning: false,
-      };
-    } catch (error) {
-      throw error;
-    }
+    await this.ai.fileSearchStores.delete({ name: targetStore, config: { force: true } });
+    this.storeName = null;
+    this.syncStatus = {
+      lastSync: null,
+      syncedFiles: [],
+      pendingFiles: [],
+      isRunning: false,
+    };
   }
 
   // Get sync status

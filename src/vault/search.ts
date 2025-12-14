@@ -1,4 +1,5 @@
 import { TFile, TFolder, type App } from "obsidian";
+import { formatError } from "src/utils/error";
 
 export interface SearchResult {
   path: string;
@@ -124,7 +125,7 @@ export function listNotes(
 // List all folders
 export function listFolders(app: App, parentFolder?: string): string[] {
   const allFiles = app.vault.getAllLoadedFiles();
-  const folders = allFiles.filter((f) => f instanceof TFolder) as TFolder[];
+  const folders = allFiles.filter((f): f is TFolder => f instanceof TFolder);
 
   let filteredFolders = folders;
 
@@ -159,7 +160,7 @@ export async function createFolder(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to create folder: ${error}`,
+      error: `Failed to create folder: ${formatError(error)}`,
     };
   }
 }

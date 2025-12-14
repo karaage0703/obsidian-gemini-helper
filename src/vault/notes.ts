@@ -1,4 +1,5 @@
 import { TFile, TFolder, type App } from "obsidian";
+import { formatError } from "src/utils/error";
 
 export interface NoteInfo {
   path: string;
@@ -48,7 +49,7 @@ export function findFileByName(app: App, fileName: string): TFile | null {
 export function findFolderByPath(app: App, folderPath: string): TFolder | null {
   const folders = app.vault
     .getAllLoadedFiles()
-    .filter((f) => f instanceof TFolder) as TFolder[];
+    .filter((f): f is TFolder => f instanceof TFolder);
 
   const searchTerm = folderPath.toLowerCase().trim();
 
@@ -164,7 +165,7 @@ export async function createNote(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to create note: ${error}`,
+      error: `Failed to create note: ${formatError(error)}`,
     };
   }
 }
@@ -225,7 +226,7 @@ export async function updateNote(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to update note: ${error}`,
+      error: `Failed to update note: ${formatError(error)}`,
     };
   }
 }
@@ -249,7 +250,7 @@ export async function deleteNote(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to delete note: ${error}`,
+      error: `Failed to delete note: ${formatError(error)}`,
     };
   }
 }
@@ -279,7 +280,7 @@ export async function renameNote(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to rename note: ${error}`,
+      error: `Failed to rename note: ${formatError(error)}`,
     };
   }
 }
@@ -394,30 +395,30 @@ export async function proposeEdit(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to edit: ${error}`,
+      error: `Failed to edit: ${formatError(error)}`,
     };
   }
 }
 
 // Apply the pending edit (just clear the backup)
-export async function applyEdit(
+export function applyEdit(
   app: App
 ): Promise<{ success: boolean; path?: string; error?: string; message?: string }> {
   if (!pendingEdit) {
-    return {
+    return Promise.resolve({
       success: false,
       error: "No pending edit found.",
-    };
+    });
   }
 
   const appliedPath = pendingEdit.originalPath;
   pendingEdit = null;
 
-  return {
+  return Promise.resolve({
     success: true,
     path: appliedPath,
     message: `Changes to "${appliedPath}" confirmed.`,
-  };
+  });
 }
 
 // Discard the pending edit (undo the changes)
@@ -459,7 +460,7 @@ export async function discardEdit(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to discard edit: ${error}`,
+      error: `Failed to discard edit: ${formatError(error)}`,
     };
   }
 }

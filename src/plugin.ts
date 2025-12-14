@@ -19,12 +19,11 @@ import {
   getFileSearchManager,
   type SyncResult,
 } from "src/core/fileSearch";
+import { formatError } from "src/utils/error";
 
 const WORKSPACE_STATE_FILENAME = "gemini-workspace.json";
 const OLD_WORKSPACE_STATE_FILENAME = ".gemini-workspace.json";
 const OLD_RAG_STATE_FILENAME = ".gemini-rag-state.json";
-
-let pluginInstance: GeminiHelperPlugin;
 
 export class GeminiHelperPlugin extends Plugin {
   settings!: GeminiHelperSettings;
@@ -32,8 +31,6 @@ export class GeminiHelperPlugin extends Plugin {
   settingsEmitter = new EventEmitter();
 
   onload(): void {
-    pluginInstance = this;
-
     // Load settings and workspace state
     void this.loadSettings().then(async () => {
       // Migrate from old settings format first (one-time)
@@ -614,7 +611,7 @@ export class GeminiHelperPlugin extends Plugin {
 
       return result;
     } catch (error) {
-      new Notice(`Sync failed: ${error}`);
+      new Notice(`Sync failed: ${formatError(error)}`);
       return null;
     }
   }
@@ -683,14 +680,4 @@ export class GeminiHelperPlugin extends Plugin {
     }
     return selected.storeId ? [selected.storeId] : [];
   }
-}
-
-export function getPlugin(): GeminiHelperPlugin {
-  if (!pluginInstance) throw new Error("Plugin instance not set yet");
-  return pluginInstance;
-}
-
-export function getSettings(): GeminiHelperSettings {
-  if (!pluginInstance) throw new Error("Plugin instance not set yet");
-  return pluginInstance.settings;
 }

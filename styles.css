@@ -200,6 +200,38 @@
   color: var(--text-on-accent);
 }
 
+/* Settings helpers */
+.gemini-helper-hidden {
+  display: none;
+}
+
+.gemini-helper-hidden-input {
+  display: none;
+}
+
+.gemini-helper-sync-progress {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.gemini-helper-progress-bar {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.gemini-helper-progress-error {
+  color: var(--text-error);
+}
+
+.gemini-helper-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .gemini-helper-message-assistant {
   align-self: flex-start;
   background: var(--background-secondary);

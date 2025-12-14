@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from "react";
+import { useState, useRef, KeyboardEvent, ChangeEvent } from "react";
 import { Send, Paperclip, StopCircle } from "lucide-react";
 import { AVAILABLE_MODELS, type ModelType, type Attachment } from "src/types";
 
 interface InputAreaProps {
-  onSend: (content: string, attachments?: Attachment[]) => void;
+  onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
   onStop?: () => void;
   isLoading: boolean;
   model: ModelType;
@@ -37,20 +37,9 @@ export default function InputArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(
-        textareaRef.current.scrollHeight,
-        200
-      )}px`;
-    }
-  }, [input]);
-
   const handleSubmit = () => {
     if ((input.trim() || pendingAttachments.length > 0) && !isLoading) {
-      onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined);
+      void onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined);
       setInput("");
       setPendingAttachments([]);
     }
@@ -157,8 +146,10 @@ export default function InputArea({
           type="file"
           multiple
           accept={getAllAcceptedTypes()}
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
+          onChange={(event) => {
+            void handleFileSelect(event);
+          }}
+          className="gemini-helper-hidden-input"
         />
 
         {/* 添付ボタン */}

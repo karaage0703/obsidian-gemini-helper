@@ -279,7 +279,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
   // Load chat histories on mount
   useEffect(() => {
-    loadChatHistories();
+    void loadChatHistories();
   }, [loadChatHistories]);
 
   // Auto-scroll to bottom when messages change
@@ -308,9 +308,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   }, [plugin]);
 
   // Handle RAG setting change from UI
-  const handleRagSettingChange = async (name: string | null) => {
+  const handleRagSettingChange = (name: string | null) => {
     setSelectedRagSetting(name);
-    await plugin.selectRagSetting(name);
+    void plugin.selectRagSetting(name);
   };
 
   // Start new chat
@@ -561,11 +561,12 @@ Always be helpful and provide clear, concise responses. When working with notes,
         // Update message status
         setMessages((prev) => {
           const newMessages = [...prev];
-          if (newMessages[messageIndex].pendingEdit) {
+          const pendingEdit = newMessages[messageIndex].pendingEdit;
+          if (pendingEdit) {
             newMessages[messageIndex] = {
               ...newMessages[messageIndex],
               pendingEdit: {
-                ...newMessages[messageIndex].pendingEdit!,
+                ...pendingEdit,
                 status: "applied",
               },
             };
@@ -590,11 +591,12 @@ Always be helpful and provide clear, concise responses. When working with notes,
         // Update message status
         setMessages((prev) => {
           const newMessages = [...prev];
-          if (newMessages[messageIndex].pendingEdit) {
+          const pendingEdit = newMessages[messageIndex].pendingEdit;
+          if (pendingEdit) {
             newMessages[messageIndex] = {
               ...newMessages[messageIndex],
               pendingEdit: {
-                ...newMessages[messageIndex].pendingEdit!,
+                ...pendingEdit,
                 status: "discarded",
               },
             };
@@ -630,7 +632,7 @@ Always be helpful and provide clear, concise responses. When working with notes,
   return (
     <div className="gemini-helper-chat">
       <div className="gemini-helper-chat-header">
-        <h3>Gemini Chat</h3>
+        <h3>Gemini chat</h3>
         <div className="gemini-helper-header-actions">
           <button
             className="gemini-helper-icon-btn"
@@ -665,7 +667,9 @@ Always be helpful and provide clear, concise responses. When working with notes,
                 </span>
                 <button
                   className="gemini-helper-history-delete"
-                  onClick={(e) => deleteChat(history.id, e)}
+                  onClick={(e) => {
+                    void deleteChat(history.id, e);
+                  }}
                   title="Delete chat"
                 >
                   ×
@@ -692,7 +696,9 @@ Always be helpful and provide clear, concise responses. When working with notes,
       <div ref={messagesEndRef} />
 
       <InputArea
-        onSend={sendMessage}
+        onSend={(content, attachments) => {
+          void sendMessage(content, attachments);
+        }}
         onStop={stopMessage}
         isLoading={isLoading}
         model={currentModel}

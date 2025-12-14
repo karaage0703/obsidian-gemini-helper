@@ -74,7 +74,9 @@ export default function MessageBubble({
         {!isStreaming && (
           <button
             className="gemini-helper-copy-btn"
-            onClick={handleCopy}
+            onClick={() => {
+              void handleCopy();
+            }}
             title="Copy to clipboard"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -132,7 +134,9 @@ export default function MessageBubble({
           <div className="gemini-helper-pending-edit-actions">
             <button
               className="gemini-helper-edit-btn gemini-helper-edit-apply"
-              onClick={onApplyEdit}
+              onClick={() => {
+                void onApplyEdit?.();
+              }}
               title="変更を適用"
             >
               <CheckCircle size={16} />
@@ -140,7 +144,9 @@ export default function MessageBubble({
             </button>
             <button
               className="gemini-helper-edit-btn gemini-helper-edit-discard"
-              onClick={onDiscardEdit}
+              onClick={() => {
+                void onDiscardEdit?.();
+              }}
               title="変更を破棄"
             >
               <XCircle size={16} />

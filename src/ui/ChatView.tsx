@@ -20,14 +20,15 @@ export class ChatView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Gemini Chat";
+    return "Gemini chat";
   }
 
   getIcon(): IconName {
     return "message-square";
   }
 
-  async onOpen() {
+  async onOpen(): Promise<void> {
+    await Promise.resolve();
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("gemini-helper-chat-container");
@@ -46,6 +47,7 @@ export class ChatView extends ItemView {
 
   async onClose(): Promise<void> {
     this.reactRoot?.unmount();
+    await Promise.resolve();
   }
 
   getActiveChat(): TFile | null {
