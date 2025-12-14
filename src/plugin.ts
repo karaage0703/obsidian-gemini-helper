@@ -1,5 +1,5 @@
 import { Plugin, WorkspaceLeaf, Notice } from "obsidian";
-import EventEmitter from "events";
+import { EventEmitter } from "src/utils/EventEmitter";
 import { ChatView, VIEW_TYPE_GEMINI_CHAT } from "src/ui/ChatView";
 import { SettingsTab } from "src/ui/SettingsTab";
 import {
