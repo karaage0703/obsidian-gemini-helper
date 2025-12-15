@@ -1,4 +1,4 @@
-import type { Content, Part } from "@google/genai";
+import type { Content } from "@google/genai";
 
 // Settings interface
 export interface GeminiHelperSettings {

@@ -121,11 +121,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
         if (roleMatch) {
           const isUser = roleMatch[1] === "You";
-          const timeStr = roleMatch[2];
 
           // Extract content (skip attachments/tools lines)
           const lines = block.split("\n").slice(1);
-          let contentLines: string[] = [];
+          const contentLines: string[] = [];
           let inContent = false;
 
           for (const line of lines) {
@@ -229,7 +228,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       if (!folderExists) {
         await plugin.app.vault.createFolder(folder);
       }
-    } catch (err) {
+    } catch {
       // Folder might already exist
     }
 

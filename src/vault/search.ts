@@ -1,4 +1,4 @@
-import { TFile, TFolder, type App } from "obsidian";
+import { TFolder, type App } from "obsidian";
 import { formatError } from "src/utils/error";
 
 export interface SearchResult {

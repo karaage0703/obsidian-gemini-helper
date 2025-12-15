@@ -13,7 +13,6 @@ import type {
   StreamChunk,
   ToolCall,
   ModelType,
-  Attachment,
 } from "src/types";
 
 export class GeminiClient {
@@ -201,7 +200,7 @@ export class GeminiClient {
     let response = await chat.sendMessageStream({ message: messageParts });
 
     while (continueLoop) {
-      let functionCallsToProcess: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const functionCallsToProcess: Array<{ name: string; args: Record<string, unknown> }> = [];
       let ragUsedEmitted = false;
 
       for await (const chunk of response) {

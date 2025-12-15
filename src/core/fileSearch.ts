@@ -346,15 +346,13 @@ export class FileSearchManager {
     includeFolders: string[] = [],
     onProgress?: (current: number, total: number, fileName: string) => void
   ): Promise<void> {
-    const result = await this.smartSync(
+    await this.smartSync(
       { files: {}, lastFullSync: null },
       { includeFolders, excludePatterns: [] },
       (current, total, fileName) => {
         onProgress?.(current, total, fileName);
       }
     );
-
-    // Errors are included in result.errors if any
   }
 
   // Delete store

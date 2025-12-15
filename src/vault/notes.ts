@@ -402,7 +402,7 @@ export async function proposeEdit(
 
 // Apply the pending edit (just clear the backup)
 export function applyEdit(
-  app: App
+  _app: App
 ): Promise<{ success: boolean; path?: string; error?: string; message?: string }> {
   if (!pendingEdit) {
     return Promise.resolve({

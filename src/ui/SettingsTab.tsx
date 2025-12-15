@@ -237,7 +237,7 @@ export class SettingsTab extends PluginSettingTab {
 
     systemPromptSetting.addTextArea((text) => {
       text
-        .setPlaceholder("E.g., always respond in Japanese.")
+        .setPlaceholder("e.g., always respond in Japanese.")
         .setValue(this.plugin.settings.systemPrompt)
         .onChange((value) => {
           void (async () => {
