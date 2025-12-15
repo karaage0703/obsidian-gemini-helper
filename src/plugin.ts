@@ -525,7 +525,7 @@ export class GeminiHelperPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 
@@ -541,7 +541,7 @@ export class GeminiHelperPlugin extends Plugin {
     const fileSearchManager = getFileSearchManager();
 
     if (!fileSearchManager) {
-      new Notice("File Search Manager not initialized. Please set API key.");
+      new Notice("File search manager not initialized. Please set API key.");
       return null;
     }
 

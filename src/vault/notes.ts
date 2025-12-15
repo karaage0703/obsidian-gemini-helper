@@ -245,7 +245,7 @@ export async function deleteNote(
   }
 
   try {
-    await app.vault.delete(file);
+    await app.fileManager.trashFile(file);
     return { success: true, path: file.path };
   } catch (error) {
     return {

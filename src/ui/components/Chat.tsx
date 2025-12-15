@@ -13,7 +13,7 @@ import type { Message, ModelType, Attachment, PendingEditInfo } from "src/types"
 import { getGeminiClient } from "src/core/gemini";
 import { getEnabledTools } from "src/core/tools";
 import { createToolExecutor, type ToolExecutionContext } from "src/vault/toolExecutor";
-import { getPendingEdit, applyEdit, discardEdit, clearPendingEdit } from "src/vault/notes";
+import { getPendingEdit, applyEdit, discardEdit } from "src/vault/notes";
 import MessageList from "./MessageList";
 import InputArea from "./InputArea";
 
@@ -337,7 +337,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     try {
       const file = plugin.app.vault.getAbstractFileByPath(filePath);
       if (file instanceof TFile) {
-        await plugin.app.vault.delete(file);
+        await plugin.app.fileManager.trashFile(file);
       }
     } catch {
       // Failed to delete chat file

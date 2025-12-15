@@ -14,7 +14,7 @@ import { formatError } from "src/utils/error";
 // Modal for creating/renaming RAG settings
 class RagSettingNameModal extends Modal {
   private name = "";
-  private onSubmit: (name: string) => void;
+  private onSubmit: (name: string) => void | Promise<void>;
   private title: string;
   private initialValue: string;
 
@@ -22,7 +22,7 @@ class RagSettingNameModal extends Modal {
     app: App,
     title: string,
     initialValue: string,
-    onSubmit: (name: string) => void
+    onSubmit: (name: string) => void | Promise<void>
   ) {
     super(app);
     this.title = title;
@@ -69,7 +69,7 @@ class RagSettingNameModal extends Modal {
 
   private submit() {
     if (this.name.trim()) {
-      this.onSubmit(this.name.trim());
+      void this.onSubmit(this.name.trim());
       this.close();
     } else {
       new Notice("Name cannot be empty");
@@ -144,7 +144,7 @@ export class SettingsTab extends PluginSettingTab {
     containerEl.empty();
 
     // API settings
-    new Setting(containerEl).setName("API settings").setHeading();
+    new Setting(containerEl).setName("API").setHeading();
 
     // Google API Key
     const apiKeySetting = new Setting(containerEl)
@@ -178,7 +178,7 @@ export class SettingsTab extends PluginSettingTab {
     });
 
     // Workspace settings
-    new Setting(containerEl).setName("Workspace settings").setHeading();
+    new Setting(containerEl).setName("Workspace").setHeading();
 
     // Workspace Folder
     new Setting(containerEl)
@@ -250,11 +250,11 @@ export class SettingsTab extends PluginSettingTab {
     });
 
     // RAG settings
-    new Setting(containerEl).setName("RAG (file search) settings").setHeading();
+    new Setting(containerEl).setName("RAG (file search)").setHeading();
 
     new Setting(containerEl)
       .setName("Enable RAG")
-      .setDesc("Enable File Search RAG to search your vault with AI")
+      .setDesc("Enable file search RAG to search your vault with AI")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.ragEnabled)
@@ -436,7 +436,7 @@ export class SettingsTab extends PluginSettingTab {
     // Header for store IDs
     const storeIdsSetting = new Setting(containerEl)
       .setName("RAG store IDs")
-      .setDesc("External File Search store IDs (one per line)");
+      .setDesc("External file search store IDs (one per line)");
 
     storeIdsSetting.settingEl.addClass("gemini-helper-settings-textarea-container");
 
@@ -486,7 +486,7 @@ export class SettingsTab extends PluginSettingTab {
             .setIcon("copy")
             .setTooltip("Copy store ID")
             .onClick(() => {
-              navigator.clipboard.writeText(storeId);
+              void navigator.clipboard.writeText(storeId);
               new Notice("Store ID copied to clipboard");
             });
         });
@@ -637,7 +637,7 @@ export class SettingsTab extends PluginSettingTab {
       );
 
     // Advanced RAG settings
-    new Setting(containerEl).setName("Advanced RAG settings").setHeading();
+    new Setting(containerEl).setName("Advanced RAG").setHeading();
 
     // Reset Sync State
     new Setting(containerEl)

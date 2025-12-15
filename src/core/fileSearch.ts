@@ -4,7 +4,6 @@ import type {
   FileSearchStore,
   SyncStatus,
   RagSyncState,
-  RagFileInfo,
 } from "src/types";
 import { formatError } from "src/utils/error";
 
