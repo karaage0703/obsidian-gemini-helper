@@ -40,7 +40,7 @@ export default function MessageBubble({
       list_folders: { icon: "📁", label: "フォルダ一覧を取得しました" },
       create_folder: { icon: "📁", label: "フォルダを作成しました" },
       get_active_note_info: { icon: "📄", label: "アクティブノート情報を取得しました" },
-      get_rag_sync_status: { icon: "🔄", label: "RAG同期状態を確認しました" },
+      get_rag_sync_status: { icon: "🔄", label: "セマンティック検索同期状態を確認しました" },
       propose_edit: { icon: "✏️", label: "編集プレビューを作成しました" },
       apply_edit: { icon: "✅", label: "編集を適用しました" },
       discard_edit: { icon: "❌", label: "編集を破棄しました" },
@@ -84,11 +84,11 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* RAG使用インジケータ */}
+      {/* セマンティック検索使用インジケータ */}
       {message.ragUsed && (
         <div className="gemini-helper-rag-used">
           <span className="gemini-helper-rag-indicator">
-            📚 RAGで検索しました
+            📚 セマンティック検索を使用しました
           </span>
         </div>
       )}

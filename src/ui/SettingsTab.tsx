@@ -183,7 +183,7 @@ export class SettingsTab extends PluginSettingTab {
     // Workspace Folder
     new Setting(containerEl)
       .setName("Workspace folder")
-      .setDesc("Folder to store chat histories and RAG settings")
+      .setDesc("Folder to store chat histories and semantic search settings")
       .addDropdown((dropdown: DropdownComponent) => {
         dropdown.addOption("", "Vault root");
 
@@ -249,12 +249,12 @@ export class SettingsTab extends PluginSettingTab {
       text.inputEl.addClass("gemini-helper-settings-textarea");
     });
 
-    // RAG settings
-    new Setting(containerEl).setName("RAG (file search)").setHeading();
+    // Semantic search settings
+    new Setting(containerEl).setName("Semantic search").setHeading();
 
     new Setting(containerEl)
-      .setName("Enable RAG")
-      .setDesc("Enable file search RAG to search your vault with AI")
+      .setName("Enable semantic search")
+      .setDesc("Enable semantic search to search your vault with AI")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.ragEnabled)
@@ -276,10 +276,10 @@ export class SettingsTab extends PluginSettingTab {
     const ragSettingNames = this.plugin.getRagSettingNames();
     const selectedName = this.plugin.workspaceState.selectedRagSetting;
 
-    // RAG Setting Selection
+    // Semantic search setting selection
     const ragSelectSetting = new Setting(containerEl)
-      .setName("RAG setting")
-      .setDesc("Select or create a RAG setting to use");
+      .setName("Semantic search setting")
+      .setDesc("Select or create a semantic search setting to use");
 
     ragSelectSetting.addDropdown((dropdown) => {
       dropdown.addOption("", "-- none --");
@@ -296,22 +296,22 @@ export class SettingsTab extends PluginSettingTab {
       });
     });
 
-    // Add new RAG setting button
+    // Add new semantic search setting button
     ragSelectSetting.addExtraButton((btn) => {
       btn
         .setIcon("plus")
-        .setTooltip("Create new RAG setting")
+        .setTooltip("Create new semantic search setting")
         .onClick(() => {
           new RagSettingNameModal(
             this.app,
-            "Create RAG setting",
+            "Create semantic search setting",
             "",
             async (name) => {
               try {
                 await this.plugin.createRagSetting(name);
                 await this.plugin.selectRagSetting(name);
                 this.display();
-                new Notice(`RAG setting "${name}" created`);
+                new Notice(`Semantic search setting "${name}" created`);
               } catch (error) {
                 new Notice(`Failed to create: ${formatError(error)}`);
               }
@@ -337,7 +337,7 @@ export class SettingsTab extends PluginSettingTab {
     // Setting header with rename/delete buttons
     const headerSetting = new Setting(containerEl)
       .setName(`Settings for ${name}`)
-      .setDesc("Configure this RAG setting");
+      .setDesc("Configure this semantic search setting");
 
     headerSetting.addExtraButton((btn) => {
       btn
@@ -346,7 +346,7 @@ export class SettingsTab extends PluginSettingTab {
         .onClick(() => {
           new RagSettingNameModal(
             this.app,
-            "Rename RAG setting",
+            "Rename semantic search setting",
             name,
             async (newName) => {
               try {
@@ -369,7 +369,7 @@ export class SettingsTab extends PluginSettingTab {
           void (async () => {
             const confirmed = await new ConfirmModal(
               this.app,
-              `Are you sure you want to delete the RAG setting "${name}"? This will not delete the store from the server.`,
+              `Are you sure you want to delete the semantic search setting "${name}"? This will not delete the store from the server.`,
               "Delete",
               "Cancel"
             ).openAndWait();
@@ -378,7 +378,7 @@ export class SettingsTab extends PluginSettingTab {
             try {
               await this.plugin.deleteRagSetting(name);
               this.display();
-              new Notice(`RAG setting "${name}" deleted`);
+              new Notice(`Semantic search setting "${name}" deleted`);
             } catch (error) {
               new Notice(`Failed to delete setting: ${formatError(error)}`);
             }
@@ -389,7 +389,7 @@ export class SettingsTab extends PluginSettingTab {
     // Store Mode Toggle
     new Setting(containerEl)
       .setName("Store mode")
-      .setDesc("Internal: sync your vault files. External: use an existing RAG store.")
+      .setDesc("Internal: sync your vault files. External: use an existing semantic search store.")
       .addDropdown((dropdown) =>
         dropdown
           .addOption("internal", "Internal (vault sync)")
@@ -435,8 +435,8 @@ export class SettingsTab extends PluginSettingTab {
   ): void {
     // Header for store IDs
     const storeIdsSetting = new Setting(containerEl)
-      .setName("RAG store IDs")
-      .setDesc("External file search store IDs (one per line)");
+      .setName("Semantic search store IDs")
+      .setDesc("External semantic search store IDs (one per line)");
 
     storeIdsSetting.settingEl.addClass("gemini-helper-settings-textarea-container");
 
@@ -495,7 +495,7 @@ export class SettingsTab extends PluginSettingTab {
     // Target Folders
     new Setting(containerEl)
       .setName("Target folders")
-      .setDesc("Folders to include in RAG indexing (comma-separated). Leave empty to include all folders.")
+      .setDesc("Folders to include in semantic search indexing (comma-separated). Leave empty to include all folders.")
       .addText((text) =>
         text
           .setPlaceholder("e.g., notes, projects, docs")
@@ -636,8 +636,8 @@ export class SettingsTab extends PluginSettingTab {
           })
       );
 
-    // Advanced RAG settings
-    new Setting(containerEl).setName("Advanced RAG").setHeading();
+    // Advanced semantic search settings
+    new Setting(containerEl).setName("Advanced semantic search").setHeading();
 
     // Reset Sync State
     new Setting(containerEl)
@@ -663,9 +663,9 @@ export class SettingsTab extends PluginSettingTab {
     // Delete Store (only for internal stores with store ID)
     if (ragSetting.storeId && !ragSetting.isExternal) {
       new Setting(containerEl)
-        .setName("Delete RAG store")
+        .setName("Delete semantic search store")
         .setDesc(
-          "Delete the current RAG store and all indexed data from the server"
+          "Delete the current semantic search store and all indexed data from the server"
         )
         .addButton((btn) =>
           btn
@@ -675,7 +675,7 @@ export class SettingsTab extends PluginSettingTab {
               void (async () => {
                 const confirmed = await new ConfirmModal(
                   this.app,
-                  "Are you sure you want to delete the RAG store? This will remove all indexed data from the server. This cannot be undone.",
+                  "Are you sure you want to delete the semantic search store? This will remove all indexed data from the server. This cannot be undone.",
                   "Delete",
                   "Cancel"
                 ).openAndWait();
@@ -683,7 +683,7 @@ export class SettingsTab extends PluginSettingTab {
 
                 try {
                   await this.plugin.deleteRagStore(name);
-                  new Notice("RAG store deleted");
+                  new Notice("Semantic search store deleted");
                   this.display();
                 } catch (error) {
                   new Notice(`Failed to delete store: ${formatError(error)}`);

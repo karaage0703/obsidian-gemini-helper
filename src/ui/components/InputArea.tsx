@@ -211,10 +211,10 @@ export default function InputArea({
             onChange={(e) => onRagSettingChange(e.target.value || null)}
             disabled={isLoading}
           >
-            <option value="">RAG: None</option>
+            <option value="">Semantic search: None</option>
             {ragSettings.map((name) => (
               <option key={name} value={name}>
-                RAG: {name}
+                Semantic search: {name}
               </option>
             ))}
           </select>

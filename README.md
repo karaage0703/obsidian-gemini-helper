@@ -15,7 +15,7 @@ An AI-powered assistant plugin for Obsidian using Google Gemini with File Search
 ### AI Chat Interface
 - **Streaming responses** - Real-time response streaming for natural conversation flow
 - **Model selection** - Switch between Gemini models directly from the chat interface
-- **RAG setting selection** - Switch between RAG configurations from the chat interface
+- **Semantic search setting selection** - Switch between semantic search configurations from the chat interface
 - **Chat history** - Automatically saves chat sessions in Markdown format (viewable and editable)
 - **Conversation threading** - Maintains context across messages in the same chat
 - **Stop generation** - Stop AI responses mid-generation with the stop button
@@ -42,7 +42,7 @@ The AI can directly interact with your vault through these tools:
 | `get_active_note_info` | Get active note metadata |
 | `rename_note` | Rename or move notes |
 | `delete_note` | Delete notes (disabled by default) |
-| `get_rag_sync_status` | Check RAG sync status for files |
+| `get_rag_sync_status` | Check semantic search sync status for files |
 
 ### Safe Editing
 When the AI edits a note using `propose_edit`:
@@ -50,17 +50,19 @@ When the AI edits a note using `propose_edit`:
 2. The original content is backed up in memory
 3. You can review the changes and click **Apply** to confirm or **Discard** to restore
 
-### RAG (File Search) Integration
-- **Multiple RAG settings** - Create and manage multiple RAG configurations
+### Semantic Search Integration
+Semantic search uses RAG (Retrieval-Augmented Generation) to search your vault intelligently.
+
+- **Multiple settings** - Create and manage multiple semantic search configurations
 - **Semantic search** - Search your entire vault using AI-powered semantic search
-- **RAG indicator** - Shows when RAG was used to answer a question
-- **Internal mode** - Sync your vault files to a new RAG store
-- **External mode** - Use existing RAG stores (supports multiple store IDs)
+- **Semantic search indicator** - Shows when semantic search was used to answer a question
+- **Internal mode** - Sync your vault files to a new semantic search store
+- **External mode** - Use existing semantic search stores (supports multiple store IDs)
 - **Incremental sync** - Only upload changed files (checksum-based detection)
-- **Target folders** - Specify which folders to include in RAG indexing
+- **Target folders** - Specify which folders to include in indexing
 - **Exclude patterns** - Use regex patterns to exclude specific files
 - **Sync progress** - Real-time progress display with cancel support
-- **Store management** - Delete RAG store from settings when needed
+- **Store management** - Delete semantic search store from settings when needed
 
 ## Supported Models
 
@@ -99,14 +101,14 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
 3. Select your preferred default model
 
 ### Workspace Settings
-- **Workspace Folder** - Where to save chat histories and RAG settings
+- **Workspace Folder** - Where to save chat histories and semantic search settings
 - **Save Chat History** - Toggle to enable/disable saving chat sessions
 - **System Prompt** - Additional instructions for the AI (e.g., "Always respond in Japanese")
 
-### RAG Settings
-1. **Enable RAG** - Toggle File Search RAG feature
-2. **RAG Setting** - Select or create a RAG configuration
-3. Click the **+** button to create a new RAG setting
+### Semantic Search Settings
+1. **Enable semantic search** - Toggle semantic search feature
+2. **Semantic search setting** - Select or create a semantic search configuration
+3. Click the **+** button to create a new semantic search setting
 4. Use pencil icon to rename, trash icon to delete
 
 #### Store Mode
@@ -115,13 +117,13 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
   - **Excluded Patterns** - Regex patterns to exclude files (one per line)
     - Example: `^daily/` excludes files in the daily folder
     - Example: `\.excalidraw\.md$` excludes Excalidraw files
-  - **Sync Vault** - Upload files to the RAG store
+  - **Sync Vault** - Upload files to the semantic search store
   - **Reset Sync State** - Clear local sync state (re-upload all files on next sync)
-  - **Delete RAG Store** - Permanently delete the RAG store from Google's servers
+  - **Delete semantic search store** - Permanently delete the store from Google's servers
 
-- **External (Existing Store)** - Use existing RAG stores
-  - **RAG Store IDs** - Enter one or more store IDs (one per line)
-  - Useful for sharing RAG stores across vaults or using pre-built stores
+- **External (Existing Store)** - Use existing semantic search stores
+  - **Semantic search store IDs** - Enter one or more store IDs (one per line)
+  - Useful for sharing stores across vaults or using pre-built stores
 
 ## Usage
 
@@ -137,19 +139,19 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
 - **+ button** - Start new chat
 - **History button** - View/load previous chats
 
-### Model & RAG Selection
+### Model & Semantic Search Selection
 Use the dropdowns below the input area:
 - **Model dropdown** - Switch between Gemini models during a conversation
-- **RAG dropdown** - Select which RAG setting to use (appears when RAG is enabled)
+- **Semantic search dropdown** - Select which semantic search setting to use (appears when enabled)
 
-### RAG Sync
-1. Enable RAG in settings
-2. Create a new RAG setting or select an existing one
+### Semantic Search Sync
+1. Enable semantic search in settings
+2. Create a new semantic search setting or select an existing one
 3. Configure target folders and exclude patterns (Internal mode)
 4. Click "Sync Vault" to index your files
-5. Select the RAG setting in the chat interface
+5. Select the semantic search setting in the chat interface
 6. The AI will now use semantic search when answering questions
-7. Look for the "RAG" indicator to see when RAG was used
+7. Look for the semantic search indicator to see when it was used
 
 ## Project Structure
 
@@ -203,9 +205,9 @@ npm run build
 ## Privacy
 
 - Your API key is stored locally in your vault's settings
-- Files are uploaded to Google's File Search API when RAG is enabled
+- Files are uploaded to Google's File Search API when semantic search is enabled
 - Chat history is stored locally in your vault as Markdown files
-- RAG settings are stored in `gemini-workspace.json` in your workspace folder
+- Semantic search settings are stored in `gemini-workspace.json` in your workspace folder
 
 ## License
 

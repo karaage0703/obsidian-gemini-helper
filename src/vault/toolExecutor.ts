@@ -136,14 +136,14 @@ export async function executeToolCall(
       if (!fileSearchManager) {
         return {
           success: false,
-          error: "RAG is not enabled or File Search Manager is not initialized.",
+          error: "Semantic search is not enabled or not initialized.",
         };
       }
 
       if (!context?.ragSyncState || !context?.ragFilterConfig) {
         return {
           success: false,
-          error: "RAG sync state not available.",
+          error: "Semantic search sync state not available.",
         };
       }
 
@@ -173,7 +173,7 @@ export async function executeToolCall(
             ? status.hasDiff
               ? `File "${status.path}" was imported at ${importedAtStr}, but has been modified since then.`
               : `File "${status.path}" was imported at ${importedAtStr} and is up to date.`
-            : `File "${status.path}" has not been imported to RAG yet.`,
+            : `File "${status.path}" has not been imported to semantic search yet.`,
         };
       }
 

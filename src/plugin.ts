@@ -72,10 +72,10 @@ export class GeminiHelperPlugin extends Plugin {
       },
     });
 
-    // Add command to sync vault (RAG)
+    // Add command to sync vault (semantic search)
     this.addCommand({
       id: "sync-vault-rag",
-      name: "Sync vault for RAG",
+      name: "Sync vault for semantic search",
       callback: () => {
         void this.syncVaultForRAG();
       },
@@ -332,7 +332,7 @@ export class GeminiHelperPlugin extends Plugin {
   // Create a new RAG setting
   async createRagSetting(name: string, setting?: Partial<RagSetting>): Promise<void> {
     if (this.workspaceState.ragSettings[name]) {
-      throw new Error(`RAG setting "${name}" already exists`);
+      throw new Error(`Semantic search setting "${name}" already exists`);
     }
 
     this.workspaceState.ragSettings[name] = {
@@ -347,7 +347,7 @@ export class GeminiHelperPlugin extends Plugin {
   async updateRagSetting(name: string, updates: Partial<RagSetting>): Promise<void> {
     const existing = this.workspaceState.ragSettings[name];
     if (!existing) {
-      throw new Error(`RAG setting "${name}" not found`);
+      throw new Error(`Semantic search setting "${name}" not found`);
     }
 
     this.workspaceState.ragSettings[name] = {
@@ -382,10 +382,10 @@ export class GeminiHelperPlugin extends Plugin {
   // Rename a RAG setting
   async renameRagSetting(oldName: string, newName: string): Promise<void> {
     if (!this.workspaceState.ragSettings[oldName]) {
-      throw new Error(`RAG setting "${oldName}" not found`);
+      throw new Error(`Semantic search setting "${oldName}" not found`);
     }
     if (this.workspaceState.ragSettings[newName]) {
-      throw new Error(`RAG setting "${newName}" already exists`);
+      throw new Error(`Semantic search setting "${newName}" already exists`);
     }
 
     this.workspaceState.ragSettings[newName] = this.workspaceState.ragSettings[oldName];
@@ -403,7 +403,7 @@ export class GeminiHelperPlugin extends Plugin {
   async resetRagSettingSyncState(name: string): Promise<void> {
     const setting = this.workspaceState.ragSettings[name];
     if (!setting) {
-      throw new Error(`RAG setting "${name}" not found`);
+      throw new Error(`Semantic search setting "${name}" not found`);
     }
 
     this.workspaceState.ragSettings[name] = {
@@ -546,26 +546,26 @@ export class GeminiHelperPlugin extends Plugin {
     }
 
     if (!this.settings.ragEnabled) {
-      new Notice("RAG is not enabled. Enable it in settings first.");
+      new Notice("Semantic search is not enabled. Enable it in settings first.");
       return null;
     }
 
     // Determine which RAG setting to sync
     const settingName = ragSettingName || this.workspaceState.selectedRagSetting;
     if (!settingName) {
-      new Notice("No RAG setting selected. Please select or create a RAG setting first.");
+      new Notice("No semantic search setting selected. Please select or create a semantic search setting first.");
       return null;
     }
 
     const ragSetting = this.workspaceState.ragSettings[settingName];
     if (!ragSetting) {
-      new Notice(`RAG setting "${settingName}" not found.`);
+      new Notice(`Semantic search setting "${settingName}" not found.`);
       return null;
     }
 
     // External stores cannot be synced
     if (ragSetting.isExternal) {
-      new Notice("Cannot sync external RAG store. Only internal stores can be synced.");
+      new Notice("Cannot sync external semantic search store. Only internal stores can be synced.");
       return null;
     }
 
@@ -620,7 +620,7 @@ export class GeminiHelperPlugin extends Plugin {
   async deleteRagStore(ragSettingName: string): Promise<void> {
     const ragSetting = this.workspaceState.ragSettings[ragSettingName];
     if (!ragSetting) {
-      throw new Error(`RAG setting "${ragSettingName}" not found`);
+      throw new Error(`Semantic search setting "${ragSettingName}" not found`);
     }
 
     if (!ragSetting.storeId) {
