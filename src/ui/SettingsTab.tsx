@@ -149,7 +149,7 @@ export class SettingsTab extends PluginSettingTab {
     // Google API Key
     const apiKeySetting = new Setting(containerEl)
       .setName("Google API key")
-      .setDesc("Enter your Google AI API key. Get one at ai.google.dev");
+      .setDesc("Your API key from ai.google.dev");
 
     let apiKeyRevealed = false;
     apiKeySetting.addText((text) => {
@@ -237,7 +237,7 @@ export class SettingsTab extends PluginSettingTab {
 
     systemPromptSetting.addTextArea((text) => {
       text
-        .setPlaceholder("E.g., always respond in Japanese.")
+        .setPlaceholder("Respond in the same language as the question.")
         .setValue(this.plugin.settings.systemPrompt)
         .onChange((value) => {
           void (async () => {
