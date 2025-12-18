@@ -79,12 +79,9 @@ export type RagSyncState = Pick<RagState, "files" | "lastFullSync">;
 
 // Model types
 export type ModelType =
+  | "gemini-3-flash-preview"
   | "gemini-3-pro-preview"
-  | "gemini-2.5-pro"
-  | "gemini-2.5-flash"
-  | "gemini-2.5-flash-lite"
-  | "gemini-2.0-flash"
-  | "gemini-2.0-flash-lite";
+  | "gemini-2.5-flash-lite";
 
 export interface ModelInfo {
   name: ModelType;
@@ -94,34 +91,19 @@ export interface ModelInfo {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
+    name: "gemini-3-flash-preview",
+    displayName: "Gemini 3 Flash Preview",
+    description: "Latest fast model with 1M context, best cost-performance (recommended)",
+  },
+  {
     name: "gemini-3-pro-preview",
     displayName: "Gemini 3 Pro Preview",
-    description: "Latest flagship model with 1M context, best performance (recommended)",
-  },
-  {
-    name: "gemini-2.5-pro",
-    displayName: "Gemini 2.5 Pro",
-    description: "Stable pro model for complex tasks",
-  },
-  {
-    name: "gemini-2.5-flash",
-    displayName: "Gemini 2.5 Flash",
-    description: "Fast and capable model",
+    description: "Latest flagship model with 1M context, best performance",
   },
   {
     name: "gemini-2.5-flash-lite",
     displayName: "Gemini 2.5 Flash Lite",
     description: "Lightweight flash model",
-  },
-  {
-    name: "gemini-2.0-flash",
-    displayName: "Gemini 2.0 Flash",
-    description: "Fast and efficient model",
-  },
-  {
-    name: "gemini-2.0-flash-lite",
-    displayName: "Gemini 2.0 Flash Lite",
-    description: "Lightweight model for simple tasks",
   },
 ];
 
@@ -138,6 +120,7 @@ export interface Message {
   toolResults?: ToolResult[];
   ragUsed?: boolean;  // RAG（File Search）が使用されたか
   ragSources?: string[];  // RAG検索で見つかったソースファイル
+  webSearchUsed?: boolean;  // Web Searchが使用されたか
 }
 
 // 保留中の編集情報
@@ -211,7 +194,7 @@ export interface SyncStatus {
 
 // Streaming chunk types
 export interface StreamChunk {
-  type: "text" | "tool_call" | "tool_result" | "error" | "done" | "rag_used";
+  type: "text" | "tool_call" | "tool_result" | "error" | "done" | "rag_used" | "web_search_used";
   content?: string;
   toolCall?: ToolCall;
   toolResult?: ToolResult;
@@ -222,7 +205,7 @@ export interface StreamChunk {
 // Default settings
 export const DEFAULT_SETTINGS: GeminiHelperSettings = {
   googleApiKey: "",
-  model: "gemini-3-pro-preview",
+  model: "gemini-3-flash-preview",
   ragEnabled: false,
   workspaceFolder: "GeminiHelper",
   saveChatHistory: true,

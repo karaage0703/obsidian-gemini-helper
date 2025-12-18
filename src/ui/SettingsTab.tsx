@@ -282,8 +282,6 @@ export class SettingsTab extends PluginSettingTab {
       .setDesc("Select or create a semantic search setting to use");
 
     ragSelectSetting.addDropdown((dropdown) => {
-      dropdown.addOption("", "-- none --");
-
       ragSettingNames.forEach((name) => {
         dropdown.addOption(name, name);
       });

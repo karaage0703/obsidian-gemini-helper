@@ -84,6 +84,15 @@ export default function MessageBubble({
         )}
       </div>
 
+      {/* Web検索使用インジケータ */}
+      {message.webSearchUsed && (
+        <div className="gemini-helper-rag-used">
+          <span className="gemini-helper-rag-indicator">
+            🌐 Web検索を使用しました
+          </span>
+        </div>
+      )}
+
       {/* セマンティック検索使用インジケータ */}
       {message.ragUsed && (
         <div className="gemini-helper-rag-used">

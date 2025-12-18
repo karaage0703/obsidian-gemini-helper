@@ -432,11 +432,15 @@ Always be helpful and provide clear, concise responses. When working with notes,
       const toolsUsed: string[] = [];
       let ragUsed = false;
       let ragSources: string[] = [];
+      let webSearchUsed = false;
 
       const allMessages = [...messages, userMessage];
 
-      // Pass RAG store IDs if RAG is enabled and a setting is selected
-      const ragStoreIds = settings.ragEnabled && selectedRagSetting
+      // Check if Web Search is selected
+      const isWebSearch = selectedRagSetting === "__websearch__";
+
+      // Pass RAG store IDs if RAG is enabled and a setting is selected (not web search)
+      const ragStoreIds = settings.ragEnabled && selectedRagSetting && !isWebSearch
         ? plugin.getSelectedStoreIds()
         : [];
 
@@ -446,7 +450,8 @@ Always be helpful and provide clear, concise responses. When working with notes,
         tools,
         systemPrompt,
         toolExecutor,
-        ragStoreIds
+        ragStoreIds,
+        isWebSearch
       )) {
         // Check if stopped
         if (abortController.signal.aborted) {
@@ -481,6 +486,10 @@ Always be helpful and provide clear, concise responses. When working with notes,
             if (chunk.ragSources) {
               ragSources = chunk.ragSources;
             }
+            break;
+
+          case "web_search_used":
+            webSearchUsed = true;
             break;
 
           case "error":
@@ -520,6 +529,7 @@ Always be helpful and provide clear, concise responses. When working with notes,
         toolResults: toolResults.length > 0 ? toolResults : undefined,
         ragUsed: ragUsed || undefined,
         ragSources: ragSources.length > 0 ? ragSources : undefined,
+        webSearchUsed: webSearchUsed || undefined,
       };
 
       const newMessages = [...messages, userMessage, assistantMessage];

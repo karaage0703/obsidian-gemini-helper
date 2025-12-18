@@ -170,7 +170,7 @@ export default function InputArea({
           onKeyDown={handleKeyDown}
           placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
           disabled={isLoading}
-          rows={1}
+          rows={3}
         />
         {isLoading ? (
           <button
@@ -204,21 +204,20 @@ export default function InputArea({
             </option>
           ))}
         </select>
-        {ragEnabled && ragSettings.length > 0 && (
-          <select
-            className="gemini-helper-model-select gemini-helper-rag-select"
-            value={selectedRagSetting || ""}
-            onChange={(e) => onRagSettingChange(e.target.value || null)}
-            disabled={isLoading}
-          >
-            <option value="">Semantic search: None</option>
-            {ragSettings.map((name) => (
-              <option key={name} value={name}>
-                Semantic search: {name}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          className="gemini-helper-model-select gemini-helper-rag-select"
+          value={selectedRagSetting || ""}
+          onChange={(e) => onRagSettingChange(e.target.value || null)}
+          disabled={isLoading}
+        >
+          <option value="">Search: None</option>
+          <option value="__websearch__">Web Search</option>
+          {ragEnabled && ragSettings.map((name) => (
+            <option key={name} value={name}>
+              Semantic search: {name}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

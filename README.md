@@ -15,6 +15,7 @@ An AI-powered assistant plugin for Obsidian using Google Gemini with File Search
 ### AI Chat Interface
 - **Streaming responses** - Real-time response streaming for natural conversation flow
 - **Model selection** - Switch between Gemini models directly from the chat interface
+- **Web Search** - Search the web using Google Search for up-to-date information
 - **Semantic search setting selection** - Switch between semantic search configurations from the chat interface
 - **Chat history** - Automatically saves chat sessions in Markdown format (viewable and editable)
 - **Conversation threading** - Maintains context across messages in the same chat
@@ -68,12 +69,9 @@ Semantic search uses RAG (Retrieval-Augmented Generation) to search your vault i
 
 | Model | Description |
 |-------|-------------|
+| Gemini 3 Flash Preview | Latest fast model with 1M context (default, recommended) |
 | Gemini 3 Pro Preview | Latest flagship model with 1M context |
-| Gemini 2.5 Pro | Stable pro model for complex tasks |
-| Gemini 2.5 Flash | Fast and capable model |
 | Gemini 2.5 Flash Lite | Lightweight flash model |
-| Gemini 2.0 Flash | Fast and efficient model |
-| Gemini 2.0 Flash Lite | Lightweight model for simple tasks |
 
 ## Installation
 
@@ -139,10 +137,10 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
 - **+ button** - Start new chat
 - **History button** - View/load previous chats
 
-### Model & Semantic Search Selection
+### Model & Search Selection
 Use the dropdowns below the input area:
 - **Model dropdown** - Switch between Gemini models during a conversation
-- **Semantic search dropdown** - Select which semantic search setting to use (appears when enabled)
+- **Search dropdown** - Select Web Search or semantic search setting to use
 
 ### Semantic Search Sync
 1. Enable semantic search in settings

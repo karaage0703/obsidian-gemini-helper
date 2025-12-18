@@ -19,7 +19,7 @@ export class GeminiClient {
   private ai: GoogleGenAI;
   private model: ModelType;
 
-  constructor(apiKey: string, model: ModelType = "gemini-2.0-flash") {
+  constructor(apiKey: string, model: ModelType = "gemini-3-flash-preview") {
     this.ai = new GoogleGenAI({ apiKey });
     this.model = model;
   }
@@ -140,17 +140,24 @@ export class GeminiClient {
     tools: ToolDefinition[],
     systemPrompt?: string,
     executeToolCall?: (name: string, args: Record<string, unknown>) => Promise<unknown>,
-    ragStoreIds?: string[]
+    ragStoreIds?: string[],
+    webSearchEnabled?: boolean
   ): AsyncGenerator<StreamChunk> {
-    const geminiTools = this.toolsToGeminiFormat(tools);
+    let geminiTools: Tool[];
 
-    // Add File Search RAG if store IDs are provided
-    if (ragStoreIds && ragStoreIds.length > 0) {
-      geminiTools.push({
-        fileSearch: {
-          fileSearchStoreNames: ragStoreIds,
-        },
-      } as Tool);
+    // Google Search cannot be used with function calling tools
+    if (webSearchEnabled) {
+      geminiTools = [{ googleSearch: {} } as Tool];
+    } else {
+      geminiTools = this.toolsToGeminiFormat(tools);
+      // Add File Search RAG if store IDs are provided
+      if (ragStoreIds && ragStoreIds.length > 0) {
+        geminiTools.push({
+          fileSearch: {
+            fileSearchStoreNames: ragStoreIds,
+          },
+        } as Tool);
+      }
     }
 
     // Build history from all messages except the last one
@@ -201,7 +208,7 @@ export class GeminiClient {
 
     while (continueLoop) {
       const functionCallsToProcess: Array<{ name: string; args: Record<string, unknown> }> = [];
-      let ragUsedEmitted = false;
+      let groundingEmitted = false;
 
       for await (const chunk of response) {
         // Check for function calls
@@ -214,7 +221,7 @@ export class GeminiClient {
           }
         }
 
-        // Check for RAG/grounding metadata (File Search usage)
+        // Check for grounding metadata (File Search or Web Search usage)
         // Access candidates via type assertion for grounding metadata
         const chunkWithCandidates = chunk as {
           candidates?: Array<{
@@ -226,22 +233,28 @@ export class GeminiClient {
           }>;
         };
         const candidates = chunkWithCandidates.candidates;
-        if (!ragUsedEmitted && candidates && candidates.length > 0) {
+        if (!groundingEmitted && candidates && candidates.length > 0) {
           const groundingMetadata = candidates[0]?.groundingMetadata;
           if (groundingMetadata) {
-            const sources: string[] = [];
-            // Extract source file names from grounding chunks
-            if (groundingMetadata.groundingChunks) {
-              for (const gc of groundingMetadata.groundingChunks) {
-                if (gc.retrievedContext?.uri) {
-                  sources.push(gc.retrievedContext.uri);
-                } else if (gc.retrievedContext?.title) {
-                  sources.push(gc.retrievedContext.title);
+            if (webSearchEnabled) {
+              // Web Search was used
+              yield { type: "web_search_used" };
+            } else {
+              // RAG/File Search was used
+              const sources: string[] = [];
+              // Extract source file names from grounding chunks
+              if (groundingMetadata.groundingChunks) {
+                for (const gc of groundingMetadata.groundingChunks) {
+                  if (gc.retrievedContext?.uri) {
+                    sources.push(gc.retrievedContext.uri);
+                  } else if (gc.retrievedContext?.title) {
+                    sources.push(gc.retrievedContext.title);
+                  }
                 }
               }
+              yield { type: "rag_used", ragSources: sources };
             }
-            yield { type: "rag_used", ragSources: sources };
-            ragUsedEmitted = true;
+            groundingEmitted = true;
           }
         }
 
