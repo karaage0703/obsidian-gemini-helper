@@ -9,7 +9,7 @@ import {
 import { TFile, Notice } from "obsidian";
 import { Plus, History, ChevronDown } from "lucide-react";
 import type { GeminiHelperPlugin } from "src/plugin";
-import type { Message, ModelType, Attachment, PendingEditInfo } from "src/types";
+import { type Message, type ModelType, type Attachment, type PendingEditInfo, DEFAULT_MODEL } from "src/types";
 import { getGeminiClient } from "src/core/gemini";
 import { getEnabledTools } from "src/core/tools";
 import { createToolExecutor, type ToolExecutionContext } from "src/vault/toolExecutor";
@@ -42,7 +42,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [showHistory, setShowHistory] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
-  const [currentModel, setCurrentModel] = useState<ModelType>(plugin.settings.model);
+  const [currentModel, setCurrentModel] = useState<ModelType>(DEFAULT_MODEL);
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
   const [selectedRagSetting, setSelectedRagSetting] = useState<string | null>(
     plugin.workspaceState.selectedRagSetting

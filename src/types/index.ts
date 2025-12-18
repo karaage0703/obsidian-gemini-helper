@@ -3,7 +3,6 @@ import type { Content } from "@google/genai";
 // Settings interface
 export interface GeminiHelperSettings {
   googleApiKey: string;
-  model: ModelType;
 
   // RAG settings
   ragEnabled: boolean;
@@ -202,10 +201,12 @@ export interface StreamChunk {
   ragSources?: string[];  // RAG検索で見つかったソースファイル
 }
 
+// Default model
+export const DEFAULT_MODEL: ModelType = "gemini-3-flash-preview";
+
 // Default settings
 export const DEFAULT_SETTINGS: GeminiHelperSettings = {
   googleApiKey: "",
-  model: "gemini-3-flash-preview",
   ragEnabled: false,
   workspaceFolder: "GeminiHelper",
   saveChatHistory: true,

@@ -8,6 +8,7 @@ import {
   type RagSetting,
   type RagState,
   DEFAULT_SETTINGS,
+  DEFAULT_MODEL,
   DEFAULT_WORKSPACE_STATE,
   DEFAULT_RAG_SETTING,
   DEFAULT_RAG_STATE,
@@ -92,7 +93,14 @@ export class GeminiHelperPlugin extends Plugin {
   }
 
   async saveSettings() {
-    await this.saveData(this.settings);
+    // Only save values that differ from defaults
+    const dataToSave: Partial<GeminiHelperSettings> = {};
+    for (const key of Object.keys(this.settings) as (keyof GeminiHelperSettings)[]) {
+      if (this.settings[key] !== DEFAULT_SETTINGS[key]) {
+        (dataToSave as Record<string, unknown>)[key] = this.settings[key];
+      }
+    }
+    await this.saveData(dataToSave);
     this.settingsEmitter.emit("settings-updated", this.settings);
 
     // Reinitialize clients if API key changed
@@ -484,7 +492,7 @@ export class GeminiHelperPlugin extends Plugin {
   }
 
   private initializeClients() {
-    initGeminiClient(this.settings.googleApiKey, this.settings.model);
+    initGeminiClient(this.settings.googleApiKey, DEFAULT_MODEL);
     initFileSearchManager(this.settings.googleApiKey, this.app);
 
     // Sync FileSearchManager with selected RAG setting
