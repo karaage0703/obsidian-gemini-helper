@@ -46,6 +46,8 @@ export class ChatView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    // Clear selection highlight when chat view is closed
+    this.plugin.clearSelectionHighlight();
     this.reactRoot?.unmount();
     await Promise.resolve();
   }

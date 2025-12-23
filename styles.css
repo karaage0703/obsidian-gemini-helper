@@ -1,5 +1,16 @@
 /* Gemini Helper Plugin Styles */
 
+/* Selection Highlight - shows where {selection} text came from */
+.gemini-helper-selection-highlight {
+  background-color: rgba(255, 213, 79, 0.4);
+  border-radius: 2px;
+}
+
+/* Dark theme adjustment */
+.theme-dark .gemini-helper-selection-highlight {
+  background-color: rgba(255, 193, 7, 0.3);
+}
+
 /* Chat Container */
 .gemini-helper-chat-container {
   height: 100%;

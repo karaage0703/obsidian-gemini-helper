@@ -327,25 +327,45 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       }
     }
 
-    // Resolve {selection} - selected text in editor
+    // Resolve {selection} - selected text in editor with optional location info
     if (result.includes("{selection}")) {
       let selection = "";
+      let locationInfo: { filePath: string; startLine: number; endLine: number } | null = null;
 
       // First try to get selection from current active view
       const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
       if (activeView) {
         const editor = activeView.editor;
         selection = editor.getSelection();
+        if (selection && activeView.file) {
+          const fromPos = editor.getCursor("from");
+          const toPos = editor.getCursor("to");
+          locationInfo = {
+            filePath: activeView.file.path,
+            startLine: fromPos.line + 1,
+            endLine: toPos.line + 1,
+          };
+        }
       }
 
       // Fallback to cached selection (captured before focus changed to chat)
       if (!selection) {
         selection = plugin.getLastSelection();
+        locationInfo = plugin.getSelectionLocation();
         // Clear cached selection after using it
         plugin.clearLastSelection();
       }
 
-      result = result.replace(/\{selection\}/g, selection || "[No selection]");
+      // Build selection text with location info
+      let selectionText = selection || "[No selection]";
+      if (selection && locationInfo) {
+        const lineInfo = locationInfo.startLine === locationInfo.endLine
+          ? `Line ${locationInfo.startLine}`
+          : `Lines ${locationInfo.startLine}-${locationInfo.endLine}`;
+        selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${selection}`;
+      }
+
+      result = result.replace(/\{selection\}/g, selectionText);
     }
 
     return result;

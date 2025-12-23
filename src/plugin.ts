@@ -1,4 +1,6 @@
 import { Plugin, WorkspaceLeaf, Notice, MarkdownView } from "obsidian";
+import { StateField, StateEffect } from "@codemirror/state";
+import { Decoration, type DecorationSet, EditorView } from "@codemirror/view";
 import { EventEmitter } from "src/utils/EventEmitter";
 import { ChatView, VIEW_TYPE_GEMINI_CHAT } from "src/ui/ChatView";
 import { SettingsTab } from "src/ui/SettingsTab";
@@ -26,11 +28,62 @@ const WORKSPACE_STATE_FILENAME = "gemini-workspace.json";
 const OLD_WORKSPACE_STATE_FILENAME = ".gemini-workspace.json";
 const OLD_RAG_STATE_FILENAME = ".gemini-rag-state.json";
 
+// Selection highlight decoration
+const selectionHighlightMark = Decoration.mark({ class: "gemini-helper-selection-highlight" });
+
+// StateEffect to set/clear the highlight range
+const setSelectionHighlight = StateEffect.define<{ from: number; to: number } | null>();
+
+// StateField to manage highlight decorations
+const selectionHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    // Map decorations through document changes
+    decorations = decorations.map(tr.changes);
+
+    for (const effect of tr.effects) {
+      if (effect.is(setSelectionHighlight)) {
+        if (effect.value === null) {
+          // Clear highlight
+          decorations = Decoration.none;
+        } else {
+          // Set new highlight
+          const { from, to } = effect.value;
+          decorations = Decoration.set([selectionHighlightMark.range(from, to)]);
+        }
+      }
+    }
+    return decorations;
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
+// Track which EditorViews have the extension installed
+const installedViews = new WeakSet<EditorView>();
+
+// Selection highlight info
+interface SelectionHighlightInfo {
+  view: MarkdownView;
+  from: number;
+  to: number;
+}
+
+// Selection location info (file path and line numbers)
+interface SelectionLocationInfo {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+}
+
 export class GeminiHelperPlugin extends Plugin {
   settings!: GeminiHelperSettings;
   workspaceState: WorkspaceState = { ...DEFAULT_WORKSPACE_STATE };
   settingsEmitter = new EventEmitter();
   private lastSelection = "";
+  private selectionHighlight: SelectionHighlightInfo | null = null;
+  private selectionLocation: SelectionLocationInfo | null = null;
 
   onload(): void {
     // Load settings and workspace state
@@ -96,6 +149,7 @@ export class GeminiHelperPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.clearSelectionHighlight();
     resetGeminiClient();
     resetFileSearchManager();
   }
@@ -552,14 +606,34 @@ export class GeminiHelperPlugin extends Plugin {
     }
   }
 
-  // Capture current selection from any markdown editor
+  // Capture current selection from any markdown editor and apply highlight
   captureSelection(): void {
+    // Clear previous highlight and location first
+    this.clearSelectionHighlight();
+    this.selectionLocation = null;
+
     // First try active view
     const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (activeView) {
-      const selection = activeView.editor.getSelection();
+      const editor = activeView.editor;
+      const selection = editor.getSelection();
       if (selection) {
         this.lastSelection = selection;
+        // Get selection range for highlighting
+        const fromPos = editor.getCursor("from");
+        const toPos = editor.getCursor("to");
+        const from = editor.posToOffset(fromPos);
+        const to = editor.posToOffset(toPos);
+        this.applySelectionHighlight(activeView, from, to);
+        // Store file path and line numbers
+        const file = activeView.file;
+        if (file) {
+          this.selectionLocation = {
+            filePath: file.path,
+            startLine: fromPos.line + 1, // 1-indexed for display
+            endLine: toPos.line + 1,
+          };
+        }
         return;
       }
     }
@@ -569,13 +643,77 @@ export class GeminiHelperPlugin extends Plugin {
     for (const leaf of leaves) {
       const view = leaf.view as MarkdownView;
       if (view?.editor) {
-        const selection = view.editor.getSelection();
+        const editor = view.editor;
+        const selection = editor.getSelection();
         if (selection) {
           this.lastSelection = selection;
+          // Get selection range for highlighting
+          const fromPos = editor.getCursor("from");
+          const toPos = editor.getCursor("to");
+          const from = editor.posToOffset(fromPos);
+          const to = editor.posToOffset(toPos);
+          this.applySelectionHighlight(view, from, to);
+          // Store file path and line numbers
+          const file = view.file;
+          if (file) {
+            this.selectionLocation = {
+              filePath: file.path,
+              startLine: fromPos.line + 1,
+              endLine: toPos.line + 1,
+            };
+          }
           return;
         }
       }
     }
+  }
+
+  // Apply highlight decoration to the selection range
+  private applySelectionHighlight(view: MarkdownView, from: number, to: number): void {
+    try {
+      // Access CodeMirror EditorView through the editor
+      // @ts-expect-error - Obsidian's editor.cm is the CodeMirror EditorView
+      const editorView = view.editor.cm as EditorView;
+      if (!editorView) return;
+
+      // Install the StateField if not already installed
+      if (!installedViews.has(editorView)) {
+        editorView.dispatch({
+          effects: StateEffect.appendConfig.of([selectionHighlightField]),
+        });
+        installedViews.add(editorView);
+      }
+
+      // Apply the highlight
+      editorView.dispatch({
+        effects: setSelectionHighlight.of({ from, to }),
+      });
+
+      // Store the highlight info for later cleanup
+      this.selectionHighlight = { view, from, to };
+    } catch {
+      // Ignore errors - highlight is optional
+    }
+  }
+
+  // Clear the selection highlight
+  clearSelectionHighlight(): void {
+    if (!this.selectionHighlight) return;
+
+    try {
+      const { view } = this.selectionHighlight;
+      // @ts-expect-error - Obsidian's editor.cm is the CodeMirror EditorView
+      const editorView = view.editor?.cm as EditorView;
+      if (editorView && installedViews.has(editorView)) {
+        editorView.dispatch({
+          effects: setSelectionHighlight.of(null),
+        });
+      }
+    } catch {
+      // Ignore errors
+    }
+
+    this.selectionHighlight = null;
   }
 
   // Get the last captured selection
@@ -583,9 +721,16 @@ export class GeminiHelperPlugin extends Plugin {
     return this.lastSelection;
   }
 
+  // Get the location info of the last captured selection
+  getSelectionLocation(): SelectionLocationInfo | null {
+    return this.selectionLocation;
+  }
+
   // Clear the cached selection (call after using it)
   clearLastSelection(): void {
     this.lastSelection = "";
+    this.selectionLocation = null;
+    this.clearSelectionHighlight();
   }
 
   async syncVaultForRAG(
