@@ -362,7 +362,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         const lineInfo = locationInfo.startLine === locationInfo.endLine
           ? `Line ${locationInfo.startLine}`
           : `Lines ${locationInfo.startLine}-${locationInfo.endLine}`;
-        selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${selection}`;
+        // Format as quote block for clear boundary
+        const quotedSelection = selection.split("\n").map(line => `> ${line}`).join("\n");
+        selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${quotedSelection}`;
       }
 
       result = result.replace(/\{selection\}/g, selectionText);
