@@ -623,9 +623,9 @@ export class GeminiHelperPlugin extends Plugin {
   // Toggle between chat view and last active markdown view
   private toggleChatView(): void {
     const chatLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_GEMINI_CHAT);
-    const activeChatLeaf = chatLeaves.find(leaf => leaf === this.app.workspace.activeLeaf);
+    const activeChatView = this.app.workspace.getActiveViewOfType(ChatView);
 
-    if (activeChatLeaf) {
+    if (activeChatView) {
       // Currently in chat, go back to last markdown view
       if (this.lastActiveMarkdownView?.leaf) {
         this.clearSelectionHighlight();
