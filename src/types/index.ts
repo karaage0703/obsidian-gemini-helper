@@ -120,6 +120,12 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
 ];
 
 // Chat message types
+// Generated image from Gemini
+export interface GeneratedImage {
+  mimeType: string;
+  data: string;  // Base64 encoded image data
+}
+
 export interface Message {
   role: "user" | "assistant";
   content: string;
@@ -133,6 +139,8 @@ export interface Message {
   ragUsed?: boolean;  // RAG（File Search）が使用されたか
   ragSources?: string[];  // RAG検索で見つかったソースファイル
   webSearchUsed?: boolean;  // Web Searchが使用されたか
+  imageGenerationUsed?: boolean;  // Image Generationが使用されたか
+  generatedImages?: GeneratedImage[];  // 生成された画像
 }
 
 // 保留中の編集情報
@@ -206,12 +214,13 @@ export interface SyncStatus {
 
 // Streaming chunk types
 export interface StreamChunk {
-  type: "text" | "tool_call" | "tool_result" | "error" | "done" | "rag_used" | "web_search_used";
+  type: "text" | "tool_call" | "tool_result" | "error" | "done" | "rag_used" | "web_search_used" | "image_generated";
   content?: string;
   toolCall?: ToolCall;
   toolResult?: ToolResult;
   error?: string;
   ragSources?: string[];  // RAG検索で見つかったソースファイル
+  generatedImage?: GeneratedImage;  // 生成された画像
 }
 
 // Default model

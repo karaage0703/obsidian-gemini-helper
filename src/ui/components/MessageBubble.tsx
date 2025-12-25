@@ -180,6 +180,15 @@ export default function MessageBubble({
         </div>
       )}
 
+      {/* Image generation indicator */}
+      {message.imageGenerationUsed && (
+        <div className="gemini-helper-rag-used">
+          <span className="gemini-helper-rag-indicator">
+            🎨 Generated image
+          </span>
+        </div>
+      )}
+
       {/* Semantic search indicator */}
       {message.ragUsed && (
         <div className="gemini-helper-rag-used">
@@ -223,6 +232,20 @@ export default function MessageBubble({
       )}
 
       <div className="gemini-helper-message-content" ref={contentRef} />
+
+      {/* Generated images display */}
+      {message.generatedImages && message.generatedImages.length > 0 && (
+        <div className="gemini-helper-generated-images">
+          {message.generatedImages.map((image, index) => (
+            <img
+              key={index}
+              src={`data:${image.mimeType};base64,${image.data}`}
+              alt={`Generated image ${index + 1}`}
+              className="gemini-helper-generated-image"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Edit preview buttons */}
       {message.pendingEdit && message.pendingEdit.status === "pending" && (

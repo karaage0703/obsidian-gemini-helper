@@ -13,6 +13,7 @@ import type {
   StreamChunk,
   ToolCall,
   ModelType,
+  GeneratedImage,
 } from "src/types";
 
 export class GeminiClient {
@@ -331,6 +332,88 @@ export class GeminiClient {
     });
 
     return response.text ?? "";
+  }
+
+  // Image generation using Gemini
+  async *generateImageStream(
+    messages: Message[],
+    systemPrompt?: string
+  ): AsyncGenerator<StreamChunk> {
+    // Build history from all messages except the last one
+    const historyMessages = messages.slice(0, -1);
+    const history = this.messagesToHistory(historyMessages);
+
+    // Get the last user message
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "user") {
+      yield { type: "error", error: "No user message to send" };
+      return;
+    }
+
+    // Build message parts with attachments
+    const messageParts: Part[] = [];
+
+    // Add attachments first if present
+    if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+      for (const attachment of lastMessage.attachments) {
+        messageParts.push({
+          inlineData: {
+            mimeType: attachment.mimeType,
+            data: attachment.data,
+          },
+        });
+      }
+    }
+
+    // Add text content
+    if (lastMessage.content) {
+      messageParts.push({ text: lastMessage.content });
+    }
+
+    // Use image generation model with responseModalities
+    const imageModel = "gemini-2.0-flash-exp";
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: imageModel,
+        contents: [...history, { role: "user", parts: messageParts }],
+        config: {
+          systemInstruction: systemPrompt,
+          responseModalities: ["TEXT", "IMAGE"],
+        },
+      });
+
+      // Process response parts
+      if (response.candidates && response.candidates.length > 0) {
+        const candidate = response.candidates[0];
+        if (candidate.content?.parts) {
+          for (const part of candidate.content.parts) {
+            // Handle text parts
+            if ("text" in part && part.text) {
+              yield { type: "text", content: part.text };
+            }
+            // Handle image parts
+            if ("inlineData" in part && part.inlineData) {
+              const imageData = part.inlineData as { mimeType?: string; data?: string };
+              if (imageData.mimeType && imageData.data) {
+                const generatedImage: GeneratedImage = {
+                  mimeType: imageData.mimeType,
+                  data: imageData.data,
+                };
+                yield { type: "image_generated", generatedImage };
+              }
+            }
+          }
+        }
+      }
+
+      yield { type: "done" };
+    } catch (error) {
+      yield {
+        type: "error",
+        error: error instanceof Error ? error.message : "Image generation failed",
+      };
+    }
   }
 }
 

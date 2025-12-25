@@ -9,7 +9,7 @@ import {
 import { TFile, Notice, MarkdownView } from "obsidian";
 import { Plus, History, ChevronDown } from "lucide-react";
 import type { GeminiHelperPlugin } from "src/plugin";
-import { type Message, type ModelType, type Attachment, type PendingEditInfo, type SlashCommand, DEFAULT_MODEL } from "src/types";
+import { type Message, type ModelType, type Attachment, type PendingEditInfo, type SlashCommand, type GeneratedImage, DEFAULT_MODEL } from "src/types";
 import { getGeminiClient } from "src/core/gemini";
 import { getEnabledTools } from "src/core/tools";
 import { createToolExecutor, type ToolExecutionContext } from "src/vault/toolExecutor";
@@ -591,26 +591,35 @@ Always be helpful and provide clear, concise responses. When working with notes,
       let ragUsed = false;
       let ragSources: string[] = [];
       let webSearchUsed = false;
+      let imageGenerationUsed = false;
+      const generatedImages: GeneratedImage[] = [];
 
       const allMessages = [...messages, userMessage];
 
-      // Check if Web Search is selected
+      // Check if Web Search or Image Generation is selected
       const isWebSearch = selectedRagSetting === "__websearch__";
+      const isImageGeneration = selectedRagSetting === "__imagegeneration__";
 
-      // Pass RAG store IDs if RAG is enabled and a setting is selected (not web search)
-      const ragStoreIds = settings.ragEnabled && selectedRagSetting && !isWebSearch
+      // Pass RAG store IDs if RAG is enabled and a setting is selected (not web search or image generation)
+      const ragStoreIds = settings.ragEnabled && selectedRagSetting && !isWebSearch && !isImageGeneration
         ? plugin.getSelectedStoreIds()
         : [];
 
       let stopped = false;
-      for await (const chunk of client.chatWithToolsStream(
-        allMessages,
-        tools,
-        systemPrompt,
-        toolExecutor,
-        ragStoreIds,
-        isWebSearch
-      )) {
+
+      // Use image generation stream or regular chat stream
+      const chunkStream = isImageGeneration
+        ? client.generateImageStream(allMessages, systemPrompt)
+        : client.chatWithToolsStream(
+            allMessages,
+            tools,
+            systemPrompt,
+            toolExecutor,
+            ragStoreIds,
+            isWebSearch
+          );
+
+      for await (const chunk of chunkStream) {
         // Check if stopped
         if (abortController.signal.aborted) {
           stopped = true;
@@ -648,6 +657,13 @@ Always be helpful and provide clear, concise responses. When working with notes,
 
           case "web_search_used":
             webSearchUsed = true;
+            break;
+
+          case "image_generated":
+            imageGenerationUsed = true;
+            if (chunk.generatedImage) {
+              generatedImages.push(chunk.generatedImage);
+            }
             break;
 
           case "error":
@@ -688,6 +704,8 @@ Always be helpful and provide clear, concise responses. When working with notes,
         ragUsed: ragUsed || undefined,
         ragSources: ragSources.length > 0 ? ragSources : undefined,
         webSearchUsed: webSearchUsed || undefined,
+        imageGenerationUsed: imageGenerationUsed || undefined,
+        generatedImages: generatedImages.length > 0 ? generatedImages : undefined,
       };
 
       const newMessages = [...messages, userMessage, assistantMessage];

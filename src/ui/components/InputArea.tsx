@@ -459,6 +459,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         >
           <option value="">Search: None</option>
           <option value="__websearch__">Web Search</option>
+          <option value="__imagegeneration__">Image Generation</option>
           {ragEnabled && ragSettings.map((name) => (
             <option key={name} value={name}>
               Semantic search: {name}
