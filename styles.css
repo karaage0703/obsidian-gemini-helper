@@ -310,7 +310,7 @@
 }
 
 .gemini-helper-message-content {
-  font-size: 13px;
+  font-size: var(--font-text-size);
   line-height: 1.5;
   user-select: text !important;
   -webkit-user-select: text !important;
