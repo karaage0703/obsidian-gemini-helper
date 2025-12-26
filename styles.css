@@ -203,6 +203,9 @@
   border-radius: 12px;
   max-width: 85%;
   word-wrap: break-word;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
 }
 
 .gemini-helper-message-user {
@@ -309,6 +312,14 @@
 .gemini-helper-message-content {
   font-size: 13px;
   line-height: 1.5;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+.gemini-helper-message-content * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 .gemini-helper-message-content p {
