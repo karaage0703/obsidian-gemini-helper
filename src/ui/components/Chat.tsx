@@ -44,7 +44,10 @@ function isRateLimitError(error: unknown): boolean {
 		}
 	}
 	if (error && typeof error === "object" && "status" in error) {
-		const status = String((error as { status?: unknown }).status || "");
+		const rawStatus = (error as { status?: unknown }).status;
+		const status = typeof rawStatus === "string" || typeof rawStatus === "number"
+			? String(rawStatus)
+			: "";
 		if (status === "429" || status.toUpperCase() === "RESOURCE_EXHAUSTED") {
 			return true;
 		}
