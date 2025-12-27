@@ -7,14 +7,27 @@ import {
   type Schema,
   type Chat,
 } from "@google/genai";
-import type {
-  Message,
-  ToolDefinition,
-  StreamChunk,
-  ToolCall,
-  ModelType,
-  GeneratedImage,
+import {
+  DEFAULT_SETTINGS,
+  type Message,
+  type ToolDefinition,
+  type StreamChunk,
+  type ToolCall,
+  type ModelType,
+  type GeneratedImage,
 } from "src/types";
+
+// Function call limit options
+export interface FunctionCallLimitOptions {
+  maxFunctionCalls?: number;           // 最大function call回数 (default: 20)
+  functionCallWarningThreshold?: number; // 残りこの回数で警告 (default: 5)
+}
+
+export interface ChatWithToolsOptions {
+  ragTopK?: number;
+  functionCallLimits?: FunctionCallLimitOptions;
+  disableTools?: boolean;
+}
 
 export class GeminiClient {
   private ai: GoogleGenAI;
@@ -142,22 +155,38 @@ export class GeminiClient {
     systemPrompt?: string,
     executeToolCall?: (name: string, args: Record<string, unknown>) => Promise<unknown>,
     ragStoreIds?: string[],
-    webSearchEnabled?: boolean
+    webSearchEnabled?: boolean,
+    options?: ChatWithToolsOptions
   ): AsyncGenerator<StreamChunk> {
-    let geminiTools: Tool[];
+    // Function call limit settings
+    const maxFunctionCalls = options?.functionCallLimits?.maxFunctionCalls ?? DEFAULT_SETTINGS.maxFunctionCalls;
+    const warningThreshold = Math.min(
+      options?.functionCallLimits?.functionCallWarningThreshold ?? DEFAULT_SETTINGS.functionCallWarningThreshold,
+      maxFunctionCalls
+    );
+    const rawTopK = options?.ragTopK ?? DEFAULT_SETTINGS.ragTopK;
+    const clampedTopK = Number.isFinite(rawTopK)
+      ? Math.min(20, Math.max(1, rawTopK))
+      : DEFAULT_SETTINGS.ragTopK;
+    let functionCallCount = 0;
+    let warningEmitted = false;
+    let geminiTools: Tool[] | undefined;
 
     // Google Search cannot be used with function calling tools
-    if (webSearchEnabled) {
-      geminiTools = [{ googleSearch: {} } as Tool];
-    } else {
-      geminiTools = this.toolsToGeminiFormat(tools);
-      // Add File Search RAG if store IDs are provided
-      if (ragStoreIds && ragStoreIds.length > 0) {
-        geminiTools.push({
-          fileSearch: {
-            fileSearchStoreNames: ragStoreIds,
-          },
-        } as Tool);
+    if (!options?.disableTools) {
+      if (webSearchEnabled) {
+        geminiTools = [{ googleSearch: {} } as Tool];
+      } else {
+        geminiTools = this.toolsToGeminiFormat(tools);
+        // Add File Search RAG if store IDs are provided
+        if (ragStoreIds && ragStoreIds.length > 0) {
+          geminiTools.push({
+            fileSearch: {
+              fileSearchStoreNames: ragStoreIds,
+              topK: clampedTopK,
+            },
+          } as Tool);
+        }
       }
     }
 
@@ -171,7 +200,7 @@ export class GeminiClient {
       history,
       config: {
         systemInstruction: systemPrompt,
-        tools: geminiTools,
+        ...(geminiTools ? { tools: geminiTools } : {}),
       },
     });
 
@@ -268,9 +297,45 @@ export class GeminiClient {
 
       // Process function calls if any
       if (functionCallsToProcess.length > 0 && executeToolCall) {
+        // Calculate how many calls we can still execute
+        const remainingBefore = maxFunctionCalls - functionCallCount;
+
+        // If already at limit, request final answer without executing any more
+        if (remainingBefore <= 0) {
+          yield {
+            type: "text",
+            content: "\n\n[Function call limit reached. Summarizing with available information...]",
+          };
+          response = await chat.sendMessageStream({
+            message: [{ text: "You have reached the function call limit. Please provide a final answer based on the information gathered so far." }],
+          });
+          for await (const chunk of response) {
+            const text = chunk.text;
+            if (text) {
+              yield { type: "text", content: text };
+            }
+          }
+          continueLoop = false;
+          continue;
+        }
+
+        // Execute only up to remaining allowed calls
+        const callsToExecute = functionCallsToProcess.slice(0, remainingBefore);
+        const skippedCount = functionCallsToProcess.length - callsToExecute.length;
+
+        // Emit warning when approaching limit
+        const remainingAfter = remainingBefore - callsToExecute.length;
+        if (!warningEmitted && remainingAfter <= warningThreshold) {
+          warningEmitted = true;
+          yield {
+            type: "text",
+            content: `\n\n[Note: ${remainingAfter} function calls remaining. Please work efficiently.]`,
+          };
+        }
+
         const functionResponseParts: Part[] = [];
 
-        for (const fc of functionCallsToProcess) {
+        for (const fc of callsToExecute) {
           const toolCall: ToolCall = {
             id: `${fc.name}_${Date.now()}`,
             name: fc.name,
@@ -292,6 +357,51 @@ export class GeminiClient {
               response: { result } as Record<string, unknown>,
             },
           });
+        }
+
+        // Update count after execution
+        functionCallCount += callsToExecute.length;
+
+        // If we hit the limit (including skipped calls), request final answer
+        if (skippedCount > 0 || functionCallCount >= maxFunctionCalls) {
+          const skippedMsg = skippedCount > 0
+            ? ` (${skippedCount} additional calls were skipped)`
+            : "";
+          yield {
+            type: "text",
+            content: `\n\n[Function call limit reached${skippedMsg}. Summarizing with available information...]`,
+          };
+
+          // Send results so far, then request final answer
+          if (functionResponseParts.length > 0) {
+            functionResponseParts.push({
+              text: "[System: Function call limit reached. Please provide a final answer based on the information gathered so far.]",
+            } as Part);
+            response = await chat.sendMessageStream({
+              message: functionResponseParts,
+            });
+          } else {
+            response = await chat.sendMessageStream({
+              message: [{ text: "You have reached the function call limit. Please provide a final answer based on the information gathered so far." }],
+            });
+          }
+
+          // Get final response without processing more function calls
+          for await (const chunk of response) {
+            const text = chunk.text;
+            if (text) {
+              yield { type: "text", content: text };
+            }
+          }
+          continueLoop = false;
+          continue;
+        }
+
+        // Add warning message to Gemini if approaching limit
+        if (warningEmitted && remainingAfter <= warningThreshold) {
+          functionResponseParts.push({
+            text: `[System: You have ${remainingAfter} function calls remaining. Please complete your task efficiently or provide a summary.]`,
+          } as Part);
         }
 
         // Send function responses back to the chat
@@ -340,7 +450,7 @@ export class GeminiClient {
     imageModel: ModelType,
     systemPrompt?: string,
     webSearchEnabled?: boolean,
-    ragStoreIds?: string[]
+    _ragStoreIds?: string[]  // Reserved for future RAG support in image generation
   ): AsyncGenerator<StreamChunk> {
     // Build history from all messages except the last one
     const historyMessages = messages.slice(0, -1);

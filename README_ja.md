@@ -2,13 +2,47 @@
 
 Google Gemini を活用した Obsidian 向け AI アシスタントプラグインです。File Search RAG によるセマンティック検索機能を搭載しています。
 
+> **無料 API キー対応！** Google の無料 API キーでこのプラグインを使用できます。[ai.google.dev](https://ai.google.dev) で無料の API キーを取得できます（クレジットカード不要）。
+
+## 無料プラン vs 有料プラン
+
+| 機能 | 無料プラン | 有料プラン |
+|------|-----------|-----------|
+| 基本チャット | ✅ | ✅ |
+| Vault 操作（Function Calling） | ✅（Gemini モデルのみ） | ✅ |
+| Web 検索 | ✅ | ✅ |
+| セマンティック検索 | ✅（制限あり） | ✅ |
+| 画像生成 | ❌ | ✅ |
+| 利用可能モデル | Gemini 2.5 Flash, Flash Lite, 3 Flash Preview, Gemma 3 シリーズ | Gemini 3 Flash/Pro Preview, 2.5 Flash Lite, 画像モデル |
+
+### 無料プランの制限事項
+
+**レート制限（モデルごと、毎日リセット）**
+- レート制限エラーが発生した場合、そのモデルのみが制限されます
+- **ヒント**: 別のモデルに切り替えることで、すぐに作業を続行できます
+- 制限は1日1回リセットされるため、翌日には再び使用可能になります
+- **使用状況の確認**: [Google AI Studio API Keys](https://aistudio.google.com/apikey) → 「View Usage」ボタンでトークンやレート制限の状況を確認できます
+
+**セマンティック検索の同期**
+- 無料プランではファイルアップロードに制限があります（1回の同期で数ファイル程度）
+- **回避策**: 毎日「Sync Vault」を実行してください。アップロード済みのファイルはスキップされるため、前回の続きから実行されます
+- 数日間毎日同期を実行することで、すべてのファイルがインデックスされます
+
+**Gemma モデル**
+- Gemma モデル（3 27B/12B/4B/1B）は Vault 操作やセマンティック検索に対応していません
+- ただし、`{content}` や `{selection}` 変数は使用可能です（@ メンションで呼び出し）
+- 「このノートを要約して」「選択テキストを説明して」など、Obsidian らしい活用が可能です
+
 ## スクリーンショット
 
 ### AI チャット画面
 ![チャット画面](chat.png)
 
 ### 設定画面
-![設定画面](settings.png)
+![設定画面](settings1.png)
+
+### セマンティック検索設定
+![セマンティック検索設定](settings2.png)
 
 ## 機能
 
@@ -88,20 +122,30 @@ AI が `propose_edit` でノートを編集する際：
 
 ## 対応モデル
 
-### チャットモデル
+### 有料プランモデル
 | モデル | 説明 |
 |--------|------|
 | Gemini 3 Flash Preview | 最新の高速モデル（1M コンテキスト、デフォルト、推奨） |
 | Gemini 3 Pro Preview | 最新のフラッグシップモデル（1M コンテキスト） |
 | Gemini 2.5 Flash Lite | 軽量版 Flash モデル |
+| Gemini 2.5 Flash (Image) | 高速画像生成、最大 1024px |
+| Gemini 3 Pro (Image) | プロ品質画像生成、4K 対応、Web検索対応 |
 
-### 画像生成モデル
-| モデル | 説明 | Web検索 |
-|--------|------|---------|
-| Gemini 2.5 Flash (Image) | 高速画像生成、最大 1024px | ❌ |
-| Gemini 3 Pro (Image) | プロ品質画像生成、4K 対応 | ✅ |
+### 無料プランモデル
+| モデル | 説明 | Vault操作 |
+|--------|------|-----------|
+| Gemini 2.5 Flash | 無料版高速モデル | ✅ |
+| Gemini 2.5 Flash Lite | 無料版軽量モデル | ✅ |
+| Gemini 3 Flash Preview | 無料版プレビューモデル | ✅ |
+| Gemma 3 27B | 無料版 Gemma モデル | ❌ |
+| Gemma 3 12B | 無料版 Gemma モデル | ❌ |
+| Gemma 3 4B | 無料版 Gemma モデル | ❌ |
+| Gemma 3 1B | 無料版 Gemma モデル | ❌ |
 
-**注**: モデルの選択はセッション間で保存されます。
+**注**:
+- モデルの選択はセッション間で保存されます
+- Gemma モデルは Vault 操作（Function Calling）やセマンティック検索に対応していません
+- API キーの種類に応じて設定で API プランを切り替えてください
 
 ## インストール
 
@@ -126,7 +170,8 @@ npm run build
 ### API 設定
 1. [ai.google.dev](https://ai.google.dev) で Google AI API キーを取得
 2. プラグイン設定で API キーを入力
-3. デフォルトモデルを選択
+3. API キーの種類に応じて API プラン（有料/無料）を選択
+4. デフォルトモデルを選択
 
 ### ワークスペース設定
 - **Workspace Folder** - チャット履歴とセマンティック検索設定の保存先
@@ -165,6 +210,13 @@ npm run build
 - **External（Existing Store）** - 既存のセマンティック検索ストアを使用
   - **Semantic search store IDs** - ストア ID を入力（1行に1つ、複数可）
   - 複数の Vault 間でストアを共有したり、事前に作成したストアを使用する場合に便利
+
+### ツール呼び出し制限（レート制限対策）
+Function Calling 使用時のレート制限エラーを防ぐための設定：
+- **Max tool calls per message** - メッセージごとの最大ツール呼び出し回数（デフォルト: 20）
+- **Tool call warning threshold** - 残り回数がこの値以下になると警告を表示（デフォルト: 5）
+- **Default list_notes limit** - list_notes が返すノートの最大数（デフォルト: 50）
+- **Semantic search chunks (Top K)** - セマンティック検索で取得するチャンク数（デフォルト: 5、最大: 20）
 
 ## 使い方
 

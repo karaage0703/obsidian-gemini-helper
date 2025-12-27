@@ -15,6 +15,7 @@ import {
   DEFAULT_WORKSPACE_STATE,
   DEFAULT_RAG_SETTING,
   DEFAULT_RAG_STATE,
+  isModelAllowedForPlan,
 } from "src/types";
 import { initGeminiClient, resetGeminiClient } from "src/core/gemini";
 import {
@@ -427,7 +428,10 @@ export class GeminiHelperPlugin extends Plugin {
 
   // Get selected model
   getSelectedModel(): ModelType {
-    return this.workspaceState.selectedModel || DEFAULT_MODEL;
+    const selected = this.workspaceState.selectedModel || DEFAULT_MODEL;
+    return isModelAllowedForPlan(this.settings.apiPlan, selected)
+      ? selected
+      : DEFAULT_MODEL;
   }
 
   // Create a new RAG setting

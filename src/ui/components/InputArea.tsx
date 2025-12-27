@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Send, Paperclip, StopCircle, Eye } from "lucide-react";
 import type { App } from "obsidian";
-import { AVAILABLE_MODELS, isImageGenerationModel, type ModelType, type Attachment, type SlashCommand } from "src/types";
+import { isImageGenerationModel, type ModelInfo, type ModelType, type Attachment, type SlashCommand } from "src/types";
 
 interface InputAreaProps {
   onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
@@ -9,6 +9,8 @@ interface InputAreaProps {
   isLoading: boolean;
   model: ModelType;
   onModelChange: (model: ModelType) => void;
+  availableModels: ModelInfo[];
+  allowWebSearch: boolean;
   ragEnabled: boolean;
   ragSettings: string[];
   selectedRagSetting: string | null;
@@ -46,6 +48,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   isLoading,
   model,
   onModelChange,
+  availableModels,
+  allowWebSearch,
   ragEnabled,
   ragSettings,
   selectedRagSetting,
@@ -88,6 +92,9 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     focus: () => textareaRef.current?.focus(),
   }));
 
+  // Check if current model is a Gemma model (no function calling support)
+  const isGemmaModel = model.toLowerCase().includes("gemma");
+
   // Build mention candidates
   const buildMentionCandidates = (query: string): MentionItem[] => {
     const variables: MentionItem[] = [
@@ -95,7 +102,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       ...(hasSelection ? [{ value: "{selection}", description: "Selected text in editor", isVariable: true }] : []),
       { value: "{content}", description: "Active note content", isVariable: true },
     ];
-    const files: MentionItem[] = vaultFiles.map((f) => ({
+    // Don't show vault files for Gemma models (no function calling support)
+    const files: MentionItem[] = isGemmaModel ? [] : vaultFiles.map((f) => ({
       value: f,
       description: "Vault file",
       isVariable: false,
@@ -188,7 +196,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         setAutocompleteIndex((prev) => Math.max(prev - 1, 0));
         return;
       }
-      if (e.key === "Enter" && filteredCommands.length > 0) {
+      if (e.key === "Enter" && !e.nativeEvent.isComposing && filteredCommands.length > 0) {
         e.preventDefault();
         selectCommand(filteredCommands[autocompleteIndex]);
         return;
@@ -224,7 +232,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         }
         return;
       }
-      if (e.key === "Enter" && filteredMentions.length > 0) {
+      if (e.key === "Enter" && !e.nativeEvent.isComposing && filteredMentions.length > 0) {
         e.preventDefault();
         selectMention(filteredMentions[mentionIndex]);
         return;
@@ -235,7 +243,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       }
     }
 
-    if (e.key === "Enter" && !e.shiftKey) {
+    // IME変換中はEnterで送信しない
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSubmit();
     }
@@ -445,7 +454,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           onChange={(e) => onModelChange(e.target.value as ModelType)}
           disabled={isLoading}
         >
-          {AVAILABLE_MODELS.map((m) => (
+          {availableModels.map((m) => (
             <option key={m.name} value={m.name}>
               {m.displayName}
             </option>
@@ -453,17 +462,19 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         </select>
         <select
           className="gemini-helper-model-select gemini-helper-rag-select"
-          value={selectedRagSetting || ""}
+          value={(allowWebSearch || ragEnabled) ? (selectedRagSetting || "") : ""}
           onChange={(e) => onRagSettingChange(e.target.value || null)}
-          disabled={isLoading}
+          disabled={isLoading || (!allowWebSearch && !ragEnabled) || model.toLowerCase().includes("gemma")}
         >
           <option value="">Search: None</option>
-          <option
-            value="__websearch__"
-            disabled={model === "gemini-2.5-flash-image"}
-          >
-            Web Search
-          </option>
+          {allowWebSearch && (
+            <option
+              value="__websearch__"
+              disabled={model === "gemini-2.5-flash-image"}
+            >
+              Web Search
+            </option>
+          )}
           {ragEnabled && ragSettings.map((name) => (
             <option
               key={name}

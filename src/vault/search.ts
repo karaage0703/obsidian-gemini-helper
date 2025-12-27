@@ -1,5 +1,6 @@
 import { TFolder, type App } from "obsidian";
 import { formatError } from "src/utils/error";
+import { DEFAULT_SETTINGS } from "src/types";
 
 export interface SearchResult {
   path: string;
@@ -94,12 +95,13 @@ export async function searchByContent(
     .slice(0, limit);
 }
 
-// List notes in a folder
+// List notes in a folder (limited to prevent token explosion)
 export function listNotes(
   app: App,
   folder?: string,
-  recursive = false
-): SearchResult[] {
+  recursive = false,
+  limit = DEFAULT_SETTINGS.listNotesLimit
+): { results: SearchResult[]; totalCount: number; hasMore: boolean } {
   let files = app.vault.getMarkdownFiles();
 
   if (folder) {
@@ -115,11 +117,21 @@ export function listNotes(
     });
   }
 
-  return files.map((file) => ({
-    path: file.path,
-    name: file.basename,
-    score: 0,
-  }));
+  // Sort by modification time (newest first) and limit
+  const sortedFiles = files
+    .sort((a, b) => b.stat.mtime - a.stat.mtime)
+    .slice(0, limit);
+  const totalCount = files.length;
+
+  return {
+    results: sortedFiles.map((file) => ({
+      path: file.path,
+      name: file.basename,
+      score: 0,
+    })),
+    totalCount,
+    hasMore: totalCount > limit,
+  };
 }
 
 // List all folders

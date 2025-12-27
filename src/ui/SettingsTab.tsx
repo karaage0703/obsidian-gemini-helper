@@ -10,7 +10,16 @@ import {
 import type { GeminiHelperPlugin } from "src/plugin";
 import { getFileSearchManager } from "src/core/fileSearch";
 import { formatError } from "src/utils/error";
-import { AVAILABLE_MODELS, type SlashCommand, type ModelType } from "src/types";
+import {
+  DEFAULT_MODEL,
+  DEFAULT_SETTINGS,
+  getAvailableModels,
+  isModelAllowedForPlan,
+  type ApiPlan,
+  type ModelInfo,
+  type SlashCommand,
+  type ModelType,
+} from "src/types";
 
 // Modal for creating/renaming RAG settings
 class RagSettingNameModal extends Modal {
@@ -138,18 +147,24 @@ class SlashCommandModal extends Modal {
   private onSubmit: (command: SlashCommand) => void | Promise<void>;
   private ragEnabled: boolean;
   private ragSettings: string[];
+  private availableModels: ModelInfo[];
+  private allowWebSearch: boolean;
 
   constructor(
     app: App,
     command: SlashCommand | null,
     ragEnabled: boolean,
     ragSettings: string[],
+    availableModels: ModelInfo[],
+    allowWebSearch: boolean,
     onSubmit: (command: SlashCommand) => void | Promise<void>
   ) {
     super(app);
     this.isNew = command === null;
     this.ragEnabled = ragEnabled;
     this.ragSettings = ragSettings;
+    this.availableModels = availableModels;
+    this.allowWebSearch = allowWebSearch;
     this.command = command
       ? { ...command }
       : {
@@ -225,7 +240,13 @@ class SlashCommandModal extends Modal {
       .setDesc("Override the current model when using this command")
       .addDropdown((dropdown) => {
         dropdown.addOption("", "Use current model");
-        AVAILABLE_MODELS.forEach((m) => {
+        const isAllowedModel = this.command.model
+          ? this.availableModels.some((m) => m.name === this.command.model)
+          : false;
+        if (!isAllowedModel) {
+          this.command.model = null;
+        }
+        this.availableModels.forEach((m) => {
           dropdown.addOption(m.name, m.displayName);
         });
         dropdown.setValue(this.command.model || "");
@@ -241,11 +262,16 @@ class SlashCommandModal extends Modal {
       .addDropdown((dropdown) => {
         dropdown.addOption("__current__", "Use current setting");
         dropdown.addOption("", "None");
-        dropdown.addOption("__websearch__", "Web search");
+        if (this.allowWebSearch) {
+          dropdown.addOption("__websearch__", "Web search");
+        }
         if (this.ragEnabled) {
           this.ragSettings.forEach((name) => {
             dropdown.addOption(name, `Semantic search: ${name}`);
           });
+        }
+        if (!this.allowWebSearch && this.command.searchSetting) {
+          this.command.searchSetting = "";
         }
         // Map stored value to dropdown value
         const storedValue = this.command.searchSetting;
@@ -298,6 +324,10 @@ export class SettingsTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+    const apiPlan = this.plugin.settings.apiPlan;
+    const allowWebSearch = true;
+    const allowRag = this.plugin.settings.ragEnabled;
+    const availableModels = getAvailableModels(apiPlan);
 
     // API settings
     new Setting(containerEl).setName("API").setHeading();
@@ -332,6 +362,27 @@ export class SettingsTab extends PluginSettingTab {
           btn.setIcon(apiKeyRevealed ? "eye-off" : "eye");
         });
     });
+
+    new Setting(containerEl)
+      .setName("API plan")
+      .setDesc("Select the plan type for your API key (affects available models and search features)")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("paid", "Paid");
+        dropdown.addOption("free", "Free");
+        dropdown.setValue(apiPlan);
+        dropdown.onChange((value) => {
+          void (async () => {
+            this.plugin.settings.apiPlan = value as ApiPlan;
+            await this.plugin.saveSettings();
+            const plan = this.plugin.settings.apiPlan;
+            const selectedModel = this.plugin.getSelectedModel();
+            if (!isModelAllowedForPlan(plan, selectedModel)) {
+              await this.plugin.selectModel(DEFAULT_MODEL);
+            }
+            this.display();
+          })();
+        });
+      });
 
     // Workspace settings
     new Setting(containerEl).setName("Workspace").setHeading();
@@ -405,6 +456,136 @@ export class SettingsTab extends PluginSettingTab {
       text.inputEl.addClass("gemini-helper-settings-textarea");
     });
 
+    // Tool limits
+    new Setting(containerEl).setName("Tool limits").setHeading();
+
+    new Setting(containerEl)
+      .setName("Max tool calls per request")
+      .setDesc("Upper limit for function calls during a single response")
+      .addSlider((slider) =>
+        slider
+          .setLimits(1, 50, 1)
+          .setValue(this.plugin.settings.maxFunctionCalls)
+          .setDynamicTooltip()
+          .onChange((value) => {
+            void (async () => {
+              this.plugin.settings.maxFunctionCalls = value;
+              const needsRefresh = this.plugin.settings.functionCallWarningThreshold > value;
+              if (needsRefresh) {
+                this.plugin.settings.functionCallWarningThreshold = value;
+              }
+              await this.plugin.saveSettings();
+              if (needsRefresh) {
+                this.display();
+              }
+            })();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip(`Reset to default (${DEFAULT_SETTINGS.maxFunctionCalls})`)
+          .onClick(() => {
+            void (async () => {
+              this.plugin.settings.maxFunctionCalls = DEFAULT_SETTINGS.maxFunctionCalls;
+              if (this.plugin.settings.functionCallWarningThreshold > DEFAULT_SETTINGS.maxFunctionCalls) {
+                this.plugin.settings.functionCallWarningThreshold = DEFAULT_SETTINGS.maxFunctionCalls;
+              }
+              await this.plugin.saveSettings();
+              this.display();
+            })();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Tool call warning threshold")
+      .setDesc("Warn when remaining calls are at or below this number")
+      .addSlider((slider) =>
+        slider
+          .setLimits(1, 50, 1)
+          .setValue(this.plugin.settings.functionCallWarningThreshold)
+          .setDynamicTooltip()
+          .onChange((value) => {
+            void (async () => {
+              const maxAllowed = this.plugin.settings.maxFunctionCalls;
+              const nextValue = Math.min(value, maxAllowed);
+              this.plugin.settings.functionCallWarningThreshold = nextValue;
+              await this.plugin.saveSettings();
+              if (nextValue !== value) {
+                this.display();
+              }
+            })();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip(`Reset to default (${DEFAULT_SETTINGS.functionCallWarningThreshold})`)
+          .onClick(() => {
+            void (async () => {
+              this.plugin.settings.functionCallWarningThreshold = DEFAULT_SETTINGS.functionCallWarningThreshold;
+              await this.plugin.saveSettings();
+              this.display();
+            })();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Default list_notes limit")
+      .setDesc("Maximum number of notes returned by list_notes when no limit is specified")
+      .addSlider((slider) =>
+        slider
+          .setLimits(10, 200, 10)
+          .setValue(this.plugin.settings.listNotesLimit)
+          .setDynamicTooltip()
+          .onChange((value) => {
+            void (async () => {
+              this.plugin.settings.listNotesLimit = value;
+              await this.plugin.saveSettings();
+            })();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip(`Reset to default (${DEFAULT_SETTINGS.listNotesLimit})`)
+          .onClick(() => {
+            void (async () => {
+              this.plugin.settings.listNotesLimit = DEFAULT_SETTINGS.listNotesLimit;
+              await this.plugin.saveSettings();
+              this.display();
+            })();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Max note characters")
+      .setDesc("Maximum characters to read from a note (longer notes will be truncated)")
+      .addSlider((slider) =>
+        slider
+          .setLimits(1000, 100000, 1000)
+          .setValue(this.plugin.settings.maxNoteChars)
+          .setDynamicTooltip()
+          .onChange((value) => {
+            void (async () => {
+              this.plugin.settings.maxNoteChars = value;
+              await this.plugin.saveSettings();
+            })();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip(`Reset to default (${DEFAULT_SETTINGS.maxNoteChars})`)
+          .onClick(() => {
+            void (async () => {
+              this.plugin.settings.maxNoteChars = DEFAULT_SETTINGS.maxNoteChars;
+              await this.plugin.saveSettings();
+              this.display();
+            })();
+          })
+      );
+
     // Slash commands settings
     new Setting(containerEl).setName("Slash commands").setHeading();
 
@@ -421,8 +602,10 @@ export class SettingsTab extends PluginSettingTab {
             new SlashCommandModal(
               this.app,
               null,
-              this.plugin.settings.ragEnabled,
-              ragSettingNames,
+              allowRag,
+              allowRag ? ragSettingNames : [],
+              availableModels,
+              allowWebSearch,
               async (command) => {
                 this.plugin.settings.slashCommands.push(command);
                 await this.plugin.saveSettings();
@@ -453,8 +636,10 @@ export class SettingsTab extends PluginSettingTab {
               new SlashCommandModal(
                 this.app,
                 command,
-                this.plugin.settings.ragEnabled,
-                ragSettingNames,
+                allowRag,
+                allowRag ? ragSettingNames : [],
+                availableModels,
+                allowWebSearch,
                 async (updated) => {
                   const index = this.plugin.settings.slashCommands.findIndex(
                     (c) => c.id === command.id
@@ -496,7 +681,7 @@ export class SettingsTab extends PluginSettingTab {
       .setDesc("Enable semantic search to search your vault with AI")
       .addToggle((toggle) =>
         toggle
-          .setValue(this.plugin.settings.ragEnabled)
+          .setValue(allowRag)
           .onChange((value) => {
             void (async () => {
               this.plugin.settings.ragEnabled = value;
@@ -506,7 +691,7 @@ export class SettingsTab extends PluginSettingTab {
           })
       );
 
-    if (this.plugin.settings.ragEnabled) {
+    if (allowRag) {
       this.displayRagSettings(containerEl);
     }
   }
@@ -514,6 +699,35 @@ export class SettingsTab extends PluginSettingTab {
   private displayRagSettings(containerEl: HTMLElement): void {
     const ragSettingNames = this.plugin.getRagSettingNames();
     const selectedName = this.plugin.workspaceState.selectedRagSetting;
+
+    // Top K setting (number of chunks to retrieve)
+    new Setting(containerEl)
+      .setName("Retrieved chunks limit")
+      .setDesc("Maximum number of document chunks to retrieve per query (lower = fewer tokens, faster)")
+      .addSlider((slider) =>
+        slider
+          .setLimits(1, 20, 1)
+          .setValue(this.plugin.settings.ragTopK)
+          .setDynamicTooltip()
+          .onChange((value) => {
+            void (async () => {
+              this.plugin.settings.ragTopK = value;
+              await this.plugin.saveSettings();
+            })();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("reset")
+          .setTooltip(`Reset to default (${DEFAULT_SETTINGS.ragTopK})`)
+          .onClick(() => {
+            void (async () => {
+              this.plugin.settings.ragTopK = DEFAULT_SETTINGS.ragTopK;
+              await this.plugin.saveSettings();
+              this.display();
+            })();
+          })
+      );
 
     // Semantic search setting selection
     const ragSelectSetting = new Setting(containerEl)

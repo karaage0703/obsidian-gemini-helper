@@ -13,9 +13,11 @@ export interface SlashCommand {
 // Settings interface
 export interface GeminiHelperSettings {
   googleApiKey: string;
+  apiPlan: ApiPlan;
 
   // RAG settings
   ragEnabled: boolean;
+  ragTopK: number;  // Number of chunks to retrieve (default: 5)
 
   // Workspace settings
   workspaceFolder: string;
@@ -24,6 +26,12 @@ export interface GeminiHelperSettings {
 
   // Slash commands
   slashCommands: SlashCommand[];
+
+  // Function call limits (for settings UI)
+  maxFunctionCalls: number;           // 最大function call回数
+  functionCallWarningThreshold: number; // 残りこの回数で警告
+  listNotesLimit: number;             // listNotesのデフォルト件数制限
+  maxNoteChars: number;               // ノート読み込み時の最大文字数
 }
 
 // 個別のRAG設定
@@ -91,13 +99,21 @@ export const DEFAULT_RAG_STATE: RagState = {
 
 export type RagSyncState = Pick<RagState, "files" | "lastFullSync">;
 
+export type ApiPlan = "paid" | "free";
+
 // Model types (includes both chat and image generation models)
 export type ModelType =
+  | "gemini-2.5-flash"
+  | "gemini-2.5-pro"
   | "gemini-3-flash-preview"
   | "gemini-3-pro-preview"
   | "gemini-2.5-flash-lite"
   | "gemini-2.5-flash-image"
-  | "gemini-3-pro-image-preview";
+  | "gemini-3-pro-image-preview"
+  | "gemma-3-27b-it"
+  | "gemma-3-12b-it"
+  | "gemma-3-4b-it"
+  | "gemma-3-1b-it";
 
 export interface ModelInfo {
   name: ModelType;
@@ -106,7 +122,7 @@ export interface ModelInfo {
   isImageModel?: boolean;  // true if this model is for image generation
 }
 
-export const AVAILABLE_MODELS: ModelInfo[] = [
+export const PAID_MODELS: ModelInfo[] = [
   {
     name: "gemini-3-flash-preview",
     displayName: "Gemini 3 Flash Preview",
@@ -135,6 +151,68 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     isImageModel: true,
   },
 ];
+
+export const FREE_MODELS: ModelInfo[] = [
+  {
+    name: "gemini-2.5-flash",
+    displayName: "Gemini 2.5 Flash",
+    description: "Free tier fast model",
+  },
+  {
+    name: "gemini-2.5-flash-lite",
+    displayName: "Gemini 2.5 Flash Lite",
+    description: "Free tier lightweight model",
+  },
+  {
+    name: "gemini-3-flash-preview",
+    displayName: "Gemini 3 Flash Preview",
+    description: "Free tier preview model",
+  },
+  {
+    name: "gemma-3-27b-it",
+    displayName: "Gemma 3 27B (No vault ops)",
+    description: "Free tier Gemma model (no function calling)",
+  },
+  {
+    name: "gemma-3-12b-it",
+    displayName: "Gemma 3 12B (No vault ops)",
+    description: "Free tier Gemma model (no function calling)",
+  },
+  {
+    name: "gemma-3-4b-it",
+    displayName: "Gemma 3 4B (No vault ops)",
+    description: "Free tier Gemma model (no function calling)",
+  },
+  {
+    name: "gemma-3-1b-it",
+    displayName: "Gemma 3 1B (No vault ops)",
+    description: "Free tier Gemma model (no function calling)",
+  },
+];
+
+function mergeModelLists(lists: ModelInfo[][]): ModelInfo[] {
+  const merged: ModelInfo[] = [];
+  const seen = new Set<string>();
+  for (const list of lists) {
+    for (const model of list) {
+      if (!seen.has(model.name)) {
+        seen.add(model.name);
+        merged.push(model);
+      }
+    }
+  }
+  return merged;
+}
+
+export const AVAILABLE_MODELS: ModelInfo[] = mergeModelLists([PAID_MODELS, FREE_MODELS]);
+
+export function getAvailableModels(plan: ApiPlan): ModelInfo[] {
+  return plan === "free" ? FREE_MODELS : PAID_MODELS;
+}
+
+export function isModelAllowedForPlan(plan: ApiPlan, modelName: ModelType): boolean {
+  return getAvailableModels(plan).some((model) => model.name === modelName);
+}
 
 // Helper function to check if a model is an image model
 export function isImageGenerationModel(modelName: ModelType): boolean {
@@ -252,9 +330,16 @@ export const DEFAULT_MODEL: ModelType = "gemini-3-flash-preview";
 // Default settings
 export const DEFAULT_SETTINGS: GeminiHelperSettings = {
   googleApiKey: "",
+  apiPlan: "paid",
   ragEnabled: false,
+  ragTopK: 5,  // Default: retrieve 5 chunks
   workspaceFolder: "GeminiHelper",
   saveChatHistory: true,
   systemPrompt: "",
   slashCommands: [],
+  // Function call limits
+  maxFunctionCalls: 20,
+  functionCallWarningThreshold: 5,
+  listNotesLimit: 50,
+  maxNoteChars: 20000,
 };

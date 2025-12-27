@@ -2,13 +2,47 @@
 
 An AI-powered assistant plugin for Obsidian using Google Gemini with File Search RAG capabilities.
 
+> **Free API Key Supported!** You can use this plugin with Google's free API key. Get your free API key at [ai.google.dev](https://ai.google.dev) - no credit card required.
+
+## Free Plan vs Paid Plan
+
+| Feature | Free Plan | Paid Plan |
+|---------|-----------|-----------|
+| Basic chat | ✅ | ✅ |
+| Vault operations (Function Calling) | ✅ (Gemini models only) | ✅ |
+| Web Search | ✅ | ✅ |
+| Semantic Search | ✅ (with limitations) | ✅ |
+| Image Generation | ❌ | ✅ |
+| Available Models | Gemini 2.5 Flash, Flash Lite, 3 Flash Preview, Gemma 3 series | Gemini 3 Flash/Pro Preview, 2.5 Flash Lite, Image models |
+
+### Free Plan Limitations
+
+**Rate Limits (per model, resets daily)**
+- When you hit a rate limit error, it only affects that specific model
+- **Tip**: Switch to a different model to continue working immediately
+- Limits reset once per day, so the blocked model will be available again the next day
+- **Check usage**: View your token and rate limit status at [Google AI Studio API Keys](https://aistudio.google.com/apikey) → click "View Usage" button
+
+**Semantic Search Sync**
+- File uploads are limited (only a few files per sync on free plan)
+- **Workaround**: Run "Sync Vault" daily - already uploaded files are skipped, so each sync continues from where it left off
+- After several days of daily syncing, all your files will be indexed
+
+**Gemma Models**
+- Gemma models (3 27B/12B/4B/1B) do not support vault operations or semantic search
+- However, `{content}` and `{selection}` variables still work (via @ mentions)
+- This allows Obsidian-native workflows like "summarize this note" or "explain selected text"
+
 ## Screenshots
 
 ### AI Chat Interface
 ![Chat Interface](chat.png)
 
 ### Settings
-![Settings](settings.png)
+![Settings](settings1.png)
+
+### Semantic Search Settings
+![Semantic Search Settings](settings2.png)
 
 ## Features
 
@@ -88,20 +122,30 @@ Semantic search uses RAG (Retrieval-Augmented Generation) to search your vault i
 
 ## Supported Models
 
-### Chat Models
+### Paid Plan Models
 | Model | Description |
 |-------|-------------|
 | Gemini 3 Flash Preview | Latest fast model with 1M context (default, recommended) |
 | Gemini 3 Pro Preview | Latest flagship model with 1M context |
 | Gemini 2.5 Flash Lite | Lightweight flash model |
+| Gemini 2.5 Flash (Image) | Fast image generation, max 1024px |
+| Gemini 3 Pro (Image) | Pro quality image generation, up to 4K, Web Search supported |
 
-### Image Generation Models
-| Model | Description | Web Search |
-|-------|-------------|------------|
-| Gemini 2.5 Flash (Image) | Fast image generation, max 1024px | ❌ |
-| Gemini 3 Pro (Image) | Pro quality image generation, up to 4K | ✅ |
+### Free Plan Models
+| Model | Description | Vault Operations |
+|-------|-------------|------------------|
+| Gemini 2.5 Flash | Free tier fast model | ✅ |
+| Gemini 2.5 Flash Lite | Free tier lightweight model | ✅ |
+| Gemini 3 Flash Preview | Free tier preview model | ✅ |
+| Gemma 3 27B | Free tier Gemma model | ❌ |
+| Gemma 3 12B | Free tier Gemma model | ❌ |
+| Gemma 3 4B | Free tier Gemma model | ❌ |
+| Gemma 3 1B | Free tier Gemma model | ❌ |
 
-**Note**: Model selection is persisted across sessions.
+**Note**:
+- Model selection is persisted across sessions
+- Gemma models do not support vault operations (function calling) or semantic search
+- Switch API plan in settings based on your API key type
 
 ## Installation
 
@@ -126,7 +170,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
 ### API Settings
 1. Get a Google AI API key from [ai.google.dev](https://ai.google.dev)
 2. Enter the API key in plugin settings
-3. Select your preferred default model
+3. Select your API plan (Paid or Free) based on your API key type
+4. Select your preferred default model
 
 ### Workspace Settings
 - **Workspace Folder** - Where to save chat histories and semantic search settings
@@ -165,6 +210,13 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
 - **External (Existing Store)** - Use existing semantic search stores
   - **Semantic search store IDs** - Enter one or more store IDs (one per line)
   - Useful for sharing stores across vaults or using pre-built stores
+
+### Tool Call Limits (Rate Limit Protection)
+These settings help prevent rate limit errors when using function calling:
+- **Max tool calls per message** - Maximum number of tool calls allowed per message (default: 20)
+- **Tool call warning threshold** - Show warning when remaining calls are at or below this number (default: 5)
+- **Default list_notes limit** - Maximum notes returned by list_notes when no limit specified (default: 50)
+- **Semantic search chunks (Top K)** - Number of chunks to retrieve for semantic search (default: 5, max: 20)
 
 ## Usage
 

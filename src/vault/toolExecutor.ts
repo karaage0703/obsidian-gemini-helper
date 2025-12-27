@@ -21,7 +21,7 @@ import {
   getFileSearchManager,
   type FilterConfig,
 } from "src/core/fileSearch";
-import type { RagSyncState } from "src/types";
+import { DEFAULT_SETTINGS, type RagSyncState } from "src/types";
 
 export type ToolResult = Record<string, unknown>;
 
@@ -29,10 +29,30 @@ export type ToolResult = Record<string, unknown>;
 export interface ToolExecutionContext {
   ragSyncState?: RagSyncState;
   ragFilterConfig?: FilterConfig;
+  listNotesLimit?: number;
+  maxNoteChars?: number;
 }
 
 // Execute a tool call and return the result
 export async function executeToolCall(
+  app: App,
+  toolName: string,
+  args: Record<string, unknown>,
+  context?: ToolExecutionContext
+): Promise<ToolResult> {
+  try {
+    return await executeToolCallInternal(app, toolName, args, context);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+      toolName,
+    };
+  }
+}
+
+// Internal function that may throw
+async function executeToolCallInternal(
   app: App,
   toolName: string,
   args: Record<string, unknown>,
@@ -43,7 +63,8 @@ export async function executeToolCall(
       return readNote(
         app,
         args.fileName as string | undefined,
-        args.activeNote as boolean | undefined
+        args.activeNote as boolean | undefined,
+        context?.maxNoteChars ?? DEFAULT_SETTINGS.maxNoteChars
       );
 
     case "create_note":
@@ -73,7 +94,8 @@ export async function executeToolCall(
     case "search_notes": {
       const query = args.query as string;
       const searchContent = args.searchContent as boolean | undefined;
-      const limit = args.limit ? parseInt(args.limit as string, 10) : 10;
+      const parsedLimit = args.limit ? parseInt(args.limit as string, 10) : 10;
+      const limit = Number.isNaN(parsedLimit) || parsedLimit <= 0 ? 10 : parsedLimit;
 
       if (searchContent) {
         const results = await searchByContent(app, query, limit);
@@ -99,11 +121,19 @@ export async function executeToolCall(
     case "list_notes": {
       const folder = args.folder as string | undefined;
       const recursive = args.recursive as boolean | undefined;
-      const results = listNotes(app, folder, recursive);
+      const defaultLimit = context?.listNotesLimit ?? DEFAULT_SETTINGS.listNotesLimit;
+      const parsedLimit = args.limit ? parseInt(args.limit as string, 10) : defaultLimit;
+      const limit = Number.isNaN(parsedLimit) || parsedLimit <= 0 ? defaultLimit : parsedLimit;
+      const { results, totalCount, hasMore } = listNotes(app, folder, recursive, limit);
       return {
         success: true,
         notes: results.map((r) => ({ name: r.name, path: r.path })),
         count: results.length,
+        totalCount,
+        hasMore,
+        message: hasMore
+          ? `Showing ${results.length} of ${totalCount} notes. Use 'limit' parameter to see more.`
+          : undefined,
       };
     }
 

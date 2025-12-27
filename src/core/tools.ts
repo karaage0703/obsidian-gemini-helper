@@ -102,7 +102,7 @@ export const obsidianTools: ToolDefinition[] = [
   {
     name: "list_notes",
     description:
-      "List all notes in a specific folder or the entire vault.",
+      "List all notes in a specific folder or the entire vault. Returns up to 'limit' notes with total count.",
     parameters: {
       type: "object",
       properties: {
@@ -113,6 +113,10 @@ export const obsidianTools: ToolDefinition[] = [
         recursive: {
           type: "boolean",
           description: "If true, include notes in subfolders",
+        },
+        limit: {
+          type: "string",
+          description: "Maximum number of notes to return (default: 50, configurable)",
         },
       },
     },

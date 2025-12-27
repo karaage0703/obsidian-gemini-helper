@@ -1,5 +1,6 @@
 import { TFile, TFolder, type App } from "obsidian";
 import { formatError } from "src/utils/error";
+import { DEFAULT_SETTINGS } from "src/types";
 
 export interface NoteInfo {
   path: string;
@@ -78,8 +79,9 @@ export function findFolderByPath(app: App, folderPath: string): TFolder | null {
 export async function readNote(
   app: App,
   fileName?: string,
-  activeNote?: boolean
-): Promise<{ success: boolean; content?: string; path?: string; error?: string }> {
+  activeNote?: boolean,
+  maxChars: number = DEFAULT_SETTINGS.maxNoteChars
+): Promise<{ success: boolean; content?: string; path?: string; error?: string; truncated?: boolean }> {
   let file: TFile | null = null;
 
   if (activeNote) {
@@ -105,8 +107,16 @@ export async function readNote(
     };
   }
 
-  const content = await app.vault.read(file);
-  return { success: true, content, path: file.path };
+  let content = await app.vault.read(file);
+  let truncated = false;
+
+  // Truncate if too long to prevent token explosion
+  if (content.length > maxChars) {
+    content = content.slice(0, maxChars) + "\n\n... [Content truncated. Note is too long to read fully.]";
+    truncated = true;
+  }
+
+  return { success: true, content, path: file.path, truncated };
 }
 
 // Create a new note
