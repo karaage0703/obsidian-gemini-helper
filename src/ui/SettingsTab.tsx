@@ -219,7 +219,7 @@ class SlashCommandModal extends Modal {
     // Prompt template
     const promptSetting = new Setting(contentEl)
       .setName("Prompt template")
-      .setDesc("Use {content} for active note content, {selection} for selected text");
+      .setDesc("Use {selection} for selected text (falls back to active note if no selection), {content} for active note");
 
     promptSetting.settingEl.addClass("gemini-helper-settings-textarea-container");
 

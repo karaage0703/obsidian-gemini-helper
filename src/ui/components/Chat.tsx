@@ -478,6 +478,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 		}
 
 		// Resolve {selection} - selected text in editor with optional location info
+		// Falls back to {content} if no selection
 		if (result.includes("{selection}")) {
 			let selection = "";
 			let locationInfo: { filePath: string; startLine: number; endLine: number } | null = null;
@@ -507,7 +508,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 			}
 
 			// Build selection text with location info
-			let selectionText = selection || "[No selection]";
+			let selectionText: string;
 			if (selection && locationInfo) {
 				const lineInfo = locationInfo.startLine === locationInfo.endLine
 					? `Line ${locationInfo.startLine}`
@@ -515,6 +516,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 				// Format as quote block for clear boundary
 				const quotedSelection = selection.split("\n").map(line => `> ${line}`).join("\n");
 				selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${quotedSelection}`;
+			} else {
+				// Fallback to active note content if no selection
+				const activeFile = plugin.app.workspace.getActiveFile();
+				if (activeFile) {
+					const content = await plugin.app.vault.read(activeFile);
+					selectionText = `From "${activeFile.path}":\n${content}`;
+				} else {
+					selectionText = "[No selection or active note]";
+				}
 			}
 
 			result = result.replace(/\{selection\}/g, selectionText);

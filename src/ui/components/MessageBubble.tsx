@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { type App, MarkdownRenderer, Component, Notice } from "obsidian";
-import { Copy, Check, CheckCircle, XCircle, Download } from "lucide-react";
+import { Copy, Check, CheckCircle, XCircle, Download, Eye } from "lucide-react";
 import type { Message, ToolCall } from "src/types";
 import { AVAILABLE_MODELS } from "src/types";
+import { HTMLPreviewModal, extractHtmlFromCodeBlock } from "./HTMLPreviewModal";
 
 interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
+  sourceFileName?: string | null;
   onApplyEdit?: () => Promise<void>;
   onDiscardEdit?: () => Promise<void>;
   app: App;
@@ -15,6 +17,7 @@ interface MessageBubbleProps {
 export default function MessageBubble({
   message,
   isStreaming,
+  sourceFileName,
   onApplyEdit,
   onDiscardEdit,
   app,
@@ -175,6 +178,36 @@ export default function MessageBubble({
     link.click();
   };
 
+  // Check for HTML code block
+  const htmlContent = extractHtmlFromCodeBlock(message.content);
+
+  // Get base name for file download
+  const getBaseName = () => {
+    if (sourceFileName) return sourceFileName;
+    // First 10 chars, keeping alphanumeric and Japanese characters
+    return message.content.slice(0, 10).replace(/[^a-zA-Z0-9\u3040-\u30ff\u4e00-\u9faf]/g, "") || "output";
+  };
+
+  // Preview HTML in modal
+  const handlePreviewHtml = () => {
+    if (htmlContent) {
+      new HTMLPreviewModal(app, htmlContent, getBaseName()).open();
+    }
+  };
+
+  // Download HTML file
+  const handleDownloadHtml = () => {
+    if (!htmlContent) return;
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `infographic-${getBaseName()}-${Date.now()}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div
       className={`gemini-helper-message ${
@@ -262,6 +295,33 @@ export default function MessageBubble({
       )}
 
       <div className="gemini-helper-message-content" ref={contentRef} />
+
+      {/* HTML code block actions */}
+      {htmlContent && !isStreaming && (
+        <div className="gemini-helper-html-actions">
+          <span className="gemini-helper-html-indicator">
+            📊 HTML Infographic
+          </span>
+          <div className="gemini-helper-html-buttons">
+            <button
+              className="gemini-helper-html-btn"
+              onClick={handlePreviewHtml}
+              title="Preview HTML"
+            >
+              <Eye size={14} />
+              <span>Preview</span>
+            </button>
+            <button
+              className="gemini-helper-html-btn"
+              onClick={handleDownloadHtml}
+              title="Download HTML file"
+            >
+              <Download size={14} />
+              <span>Save</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Generated images display */}
       {message.generatedImages && message.generatedImages.length > 0 && (

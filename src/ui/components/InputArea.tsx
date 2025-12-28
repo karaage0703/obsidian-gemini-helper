@@ -92,6 +92,15 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     focus: () => textareaRef.current?.focus(),
   }));
 
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  }, [input]);
+
   // Check if current model is a Gemma model (no function calling support)
   const isGemmaModel = model.toLowerCase().includes("gemma");
 

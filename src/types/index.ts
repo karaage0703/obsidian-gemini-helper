@@ -327,6 +327,18 @@ export interface StreamChunk {
 // Default model
 export const DEFAULT_MODEL: ModelType = "gemini-3-flash-preview";
 
+// Default slash commands
+export const DEFAULT_SLASH_COMMANDS: SlashCommand[] = [
+  {
+    id: "cmd_infographic_default",
+    name: "infographic",
+    promptTemplate: "Convert the following content into an HTML infographic. Output the HTML directly in your response, do not create a note:\n\n{selection}",
+    model: null,
+    description: "Generate HTML infographic from selection or active note",
+    searchSetting: null,
+  },
+];
+
 // Default settings
 export const DEFAULT_SETTINGS: GeminiHelperSettings = {
   googleApiKey: "",
@@ -336,7 +348,7 @@ export const DEFAULT_SETTINGS: GeminiHelperSettings = {
   workspaceFolder: "GeminiHelper",
   saveChatHistory: true,
   systemPrompt: "",
-  slashCommands: [],
+  slashCommands: DEFAULT_SLASH_COMMANDS,
   // Function call limits
   maxFunctionCalls: 20,
   functionCallWarningThreshold: 5,

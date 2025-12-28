@@ -592,8 +592,25 @@ export class GeminiHelperPlugin extends Plugin {
       this.syncFileSearchManagerWithSelectedRag();
     }
 
+    // Add default infographic command if not present
+    const hasInfographicCommand = this.settings.slashCommands.some(
+      (cmd) => cmd.name === "infographic"
+    );
+    if (!hasInfographicCommand) {
+      this.settings.slashCommands.push({
+        id: "cmd_infographic_default",
+        name: "infographic",
+        promptTemplate: "Convert the following content into an HTML infographic. Output the HTML directly in your response, do not create a note:\n\n{selection}",
+        model: null,
+        description: "Generate HTML infographic from selection or active note",
+        searchSetting: null,
+      });
+      needsSave = true;
+    }
+
     if (needsSave) {
       await this.saveData(data);
+      await this.saveSettings();
     }
   }
 

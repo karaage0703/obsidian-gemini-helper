@@ -12,6 +12,18 @@ interface MessageListProps {
   app: App;
 }
 
+// Extract source file name from user message (e.g., From "xxx.md":)
+function extractSourceFileName(content: string): string | null {
+  const match = content.match(/From "([^"]+\.md)"/);
+  if (match) {
+    // Get just the file name without path
+    const fullPath = match[1];
+    const parts = fullPath.split("/");
+    return parts[parts.length - 1].replace(".md", "");
+  }
+  return null;
+}
+
 const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
   messages,
   streamingContent,
@@ -20,6 +32,18 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
   onDiscardEdit,
   app,
 }, ref) => {
+  // Get source file name for assistant message (from previous user message)
+  const getSourceFileForIndex = (index: number): string | null => {
+    if (messages[index]?.role !== "assistant") return null;
+    // Look at the previous user message
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        return extractSourceFileName(messages[i].content);
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="gemini-helper-messages" ref={ref}>
       {messages.length === 0 && !streamingContent && (
@@ -35,6 +59,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
         <MessageBubble
           key={index}
           message={message}
+          sourceFileName={getSourceFileForIndex(index)}
           onApplyEdit={onApplyEdit ? () => onApplyEdit(index) : undefined}
           onDiscardEdit={onDiscardEdit ? () => onDiscardEdit(index) : undefined}
           app={app}

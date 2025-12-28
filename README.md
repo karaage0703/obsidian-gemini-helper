@@ -54,6 +54,7 @@ An AI-powered assistant plugin for Obsidian using Google Gemini with File Search
 - **Streaming responses** - Real-time response streaming for natural conversation flow
 - **Model selection** - Switch between Gemini models directly from the chat interface (selection persisted)
 - **Image generation** - Generate images using Gemini image models with copy/save buttons
+- **HTML Infographic preview** - Preview and save HTML code blocks (great for AI-generated infographics)
 - **Web Search** - Search the web using Google Search for up-to-date information
 - **Semantic search setting selection** - Switch between semantic search configurations from the chat interface
 - **Slash commands** - Create reusable prompt templates triggered by typing `/` in chat
@@ -69,7 +70,7 @@ Create custom prompt templates that can be triggered by typing `/` in the chat i
 - **Custom prompts** - Define reusable prompt templates with variables
 - **Model override** - Optionally set a specific model for each command
 - **Search override** - Optionally set Web Search or semantic search for each command
-- **Variables** - Use `{content}` for active note content, `{selection}` for selected text
+- **Variables** - Use `{selection}` for selected text (falls back to active note if no selection), `{content}` for active note content
 - **Autocomplete** - Type `/` to see available commands, filter by typing more characters
 
 ### @ Mentions
@@ -189,8 +190,8 @@ Copy `main.js`, `manifest.json`, and `styles.css` to your vault's plugin folder.
    - **Command name** - The trigger name (e.g., `translate` for `/translate`)
    - **Description** - Brief description shown in autocomplete
    - **Prompt template** - The prompt text with optional variables:
+     - `{selection}` - Replaced with selected text (falls back to active note if no selection)
      - `{content}` - Replaced with the active note's content
-     - `{selection}` - Replaced with the currently selected text
    - **Model** (optional) - Override the current model when using this command
    - **Search** (optional) - Override the current search setting (None, Web search, or semantic search)
 4. Use pencil icon to edit, trash icon to delete commands
@@ -253,6 +254,10 @@ Example commands you might create:
 - `/translate` - "Translate the following to English: {selection}"
 - `/summarize` - "Summarize this note: {content}"
 - `/explain` - "Explain this concept: {selection}"
+
+**Default Command:**
+- `/infographic` - Converts content into an HTML infographic with Preview/Save buttons
+  - **Note**: The default prompt is in English. If you want output in another language, edit the command in settings and rewrite the prompt in your preferred language.
 
 ### Semantic Search Sync
 1. Enable semantic search in settings
